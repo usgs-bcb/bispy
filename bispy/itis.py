@@ -80,10 +80,10 @@ class Itis:
     def search(self, scientificname):
         # Set up itisResult structure to return and prep the processingMetadata, set a default for Summary Result to Not Matched
         itisResult = {}
-        itisResult["processingMetadata"] = {}
-        itisResult["processingMetadata"]["Date Processed"] = datetime.utcnow().isoformat()
-        itisResult["processingMetadata"]["Summary Result"] = "Not Matched"
-        itisResult["processingMetadata"]["Detailed Results"] = []
+        itisResult["Processing Metadata"] = {}
+        itisResult["Processing Metadata"]["Date Processed"] = datetime.utcnow().isoformat()
+        itisResult["Processing Metadata"]["Summary Result"] = "Not Matched"
+        itisResult["Processing Metadata"]["Detailed Results"] = []
 
         # Set up the primary search method for an exact match on scientific name
         url_exactMatch = self.get_itis_search_url(scientificname, False, False)
@@ -92,13 +92,13 @@ class Itis:
         try:
             r_exactMatch = requests.get(url_exactMatch).json()
         except:
-            itisResult["processingMetadata"]["Detailed Results"].append({"Hard Fail Query": url_exactMatch})
-            itisResult["processingMetadata"]["Summary Result"] = "Hard Fail Query"
+            itisResult["Processing Metadata"]["Detailed Results"].append({"Hard Fail Query": url_exactMatch})
+            itisResult["Processing Metadata"]["Summary Result"] = "Hard Fail Query"
             return itisResult
 
         if r_exactMatch["response"]["numFound"] == 0:
 
-            itisResult["processingMetadata"]["Detailed Results"].append({"Exact Match Fail": url_exactMatch})
+            itisResult["Processing Metadata"]["Detailed Results"].append({"Exact Match Fail": url_exactMatch})
 
             # if we didn't get anything with an exact name match, run the sequence using fuzziness level
             url_fuzzyMatch = self.get_itis_search_url(scientificname, True, False)
@@ -106,13 +106,13 @@ class Itis:
             try:
                 r_fuzzyMatch = requests.get(url_fuzzyMatch).json()
             except:
-                itisResult["processingMetadata"]["Detailed Results"].append({"Hard Fail Query": url_fuzzyMatch})
-                itisResult["processingMetadata"]["Summary Result"] = "Hard Fail Query"
+                itisResult["Processing Metadata"]["Detailed Results"].append({"Hard Fail Query": url_fuzzyMatch})
+                itisResult["Processing Metadata"]["Summary Result"] = "Hard Fail Query"
                 return itisResult
 
             if r_fuzzyMatch["response"]["numFound"] == 0:
                 # If we still get no results then provide the specific detailed result
-                itisResult["processingMetadata"]["Detailed Results"].append({"Fuzzy Match Fail": url_fuzzyMatch})
+                itisResult["Processing Metadata"]["Detailed Results"].append({"Fuzzy Match Fail": url_fuzzyMatch})
                 return itisResult
 
             elif r_fuzzyMatch["response"]["numFound"] > 0:
@@ -125,13 +125,13 @@ class Itis:
                                                      False)
                     r_tsnSearch = requests.get(url_tsnSearch).json()
                     itisResult["itisData"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
-                    itisResult["processingMetadata"]["Summary Result"] = "Followed Accepted TSN"
-                    itisResult["processingMetadata"]["Detailed Results"].append({"TSN Search": url_tsnSearch})
+                    itisResult["Processing Metadata"]["Summary Result"] = "Followed Accepted TSN"
+                    itisResult["Processing Metadata"]["Detailed Results"].append({"TSN Search": url_tsnSearch})
                 else:
-                    itisResult["processingMetadata"]["Summary Result"] = "Fuzzy Match"
+                    itisResult["Processing Metadata"]["Summary Result"] = "Fuzzy Match"
 
                 # Whether or not we needed to follow an accepted TSN, we will also include the ITIS record that was the point of discovery
-                itisResult["processingMetadata"]["Detailed Results"].append({"Fuzzy Match": url_fuzzyMatch})
+                itisResult["Processing Metadata"]["Detailed Results"].append({"Fuzzy Match": url_fuzzyMatch})
                 itisResult["itisData"].append(self.package_itis_json(r_fuzzyMatch["response"]["docs"][0]))
 
         elif r_exactMatch["response"]["numFound"] == 1:
@@ -144,19 +144,19 @@ class Itis:
                 url_tsnSearch = self.get_itis_search_url(r_exactMatch["response"]["docs"][0]["acceptedTSN"][0], False, False)
                 r_tsnSearch = requests.get(url_tsnSearch).json()
                 itisResult["itisData"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
-                itisResult["processingMetadata"]["Summary Result"] = "Followed Accepted TSN"
-                itisResult["processingMetadata"]["Detailed Results"].append({"TSN Search": url_tsnSearch})
+                itisResult["Processing Metadata"]["Summary Result"] = "Followed Accepted TSN"
+                itisResult["Processing Metadata"]["Detailed Results"].append({"TSN Search": url_tsnSearch})
             else:
-                itisResult["processingMetadata"]["Summary Result"] = "Exact Match"
+                itisResult["Processing Metadata"]["Summary Result"] = "Exact Match"
 
             # Whether or not we needed to follow an accepted TSN, we will also include the ITIS record that was the point of discovery
-            itisResult["processingMetadata"]["Detailed Results"].append({"Exact Match": url_exactMatch})
+            itisResult["Processing Metadata"]["Detailed Results"].append({"Exact Match": url_exactMatch})
             itisResult["itisData"].append(self.package_itis_json(r_exactMatch["response"]["docs"][0]))
 
         elif r_exactMatch["response"]["numFound"] > 1:
             # If we find more than one document with an exact match search, we can make a few more decisions based on what's in the data before we need to punt the rest to human supervision
 
-            itisResult["processingMetadata"]["Detailed Results"].append({"Multi Match": url_exactMatch})
+            itisResult["Processing Metadata"]["Detailed Results"].append({"Multi Match": url_exactMatch})
 
             # First we assemble the set of acceptedTSNs for the discovered records so that we can determine if there is only a single accepted record to follow
             # This step might need review by the ITIS team, but it seems reasonable for the records we have looked at so far
@@ -171,12 +171,12 @@ class Itis:
                 url_tsnSearch = self.get_itis_search_url(acceptedTSNs[0], False, True)
                 r_tsnSearch = requests.get(url_tsnSearch).json()
                 itisResult["itisData"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
-                itisResult["processingMetadata"]["Summary Result"] = "Followed Accepted TSN"
-                itisResult["processingMetadata"]["Detailed Results"].append({"TSN Search": url_tsnSearch})
+                itisResult["Processing Metadata"]["Summary Result"] = "Followed Accepted TSN"
+                itisResult["Processing Metadata"]["Detailed Results"].append({"TSN Search": url_tsnSearch})
 
             else:
                 # If there are multiple acceptedTSN values for multiple returned exact match records, we don't yet know what to do with these.
                 # Some combination of factors in the data or a deeper level search from the source may come up with a way to make the algorithm more sophisticated.
-                itisResult["processingMetadata"]["Summary Result"] = "Indeterminate Results"
+                itisResult["Processing Metadata"]["Summary Result"] = "Indeterminate Results"
 
         return itisResult

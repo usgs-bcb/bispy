@@ -10,6 +10,8 @@ from . import worms
 from . import natureserve
 from . import tess
 from . import xdd
+from . import gap
+from . import iucn
 
 # provide version, PEP - three components ("major.minor.micro")
 __version__ = pkg_resources.require("bispy")[0].version

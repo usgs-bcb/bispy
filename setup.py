@@ -12,6 +12,8 @@ setup(name='bispy',
             'requests',
             'boto3',
             'elasticsearch',
-            'xmltodict'
+            'xmltodict',
+            'geopandas',
+            'owslib'
       ],
       zip_safe=False)
