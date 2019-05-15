@@ -11,19 +11,6 @@ class Gap:
         self.sb_geoserver = "https://www.sciencebase.gov/geoserver/CONUS_Range_2001v1/ows"
 
     def gap_species_search(self, criteria):
-        '''
-        This function looks for a GAP species in the core habitat maps collection in ScienceBase. If it finds a match,
-        it assembles a combined GAP species document from available information in ScienceBase. This includes the basic
-        metadata in the item (identifiers, names, etc.), the database parameters file, a cached set of ITIS
-        information, and links to habitat map and range map items and services. In addition, the total bounding box
-        for all seasons is calculated by retrieving the WFS feature for the range map. This provides a basic idea of
-        the geospatial coverage to be expected for a species.
-
-        :param criteria: Can be one of scientific name, common name, ITIS TSN, or GAP species code
-        :return: Dictionary containing at least the processing metadata (date/time and URL used) and will contain a GAP
-        Species document with all the information assembled for the given species.
-        '''
-
         gap_result= {}
         gap_result["Processing Metadata"] = {
             "Date Processed": datetime.utcnow().isoformat(),
@@ -35,63 +22,84 @@ class Gap:
         }
         gap_result["Processing Metadata"]["Search URL"] = \
             f"{self.sb_api_root}?parentId={self.gap_species_collection}" \
-            f"&format=json&fields=identifiers,files,webLinks,distributionLinks&filter=itemIdentifier%3D{identifier_param}"
+            f"&format=json&fields=identifiers,files,webLinks,distributionLinks,dates" \
+            f"&filter=itemIdentifier%3D{identifier_param}"
 
         sb_result = requests.get(gap_result["Processing Metadata"]["Search URL"]).json()
 
         if sb_result["total"] == 1:
-
-            gap_result["GAP Species"] = dict()
-            gap_result["GAP Species"]["GAP Habitat Map Item"] = sb_result["items"][0]["link"]["url"]
-            gap_result["GAP Species"]["GAP Range Map Item"] = next((
-                l["uri"] for l in sb_result["items"][0]["webLinks"] if l["title"].find("Range Map") != -1
-            ), None)
-            gap_result["GAP Species"]["GAP Habitat Map WMS"] = next((
-                l["uri"] for l in sb_result["items"][0]["distributionLinks"] if l["title"] == "External WMS Service"
-            ), None)
-            gap_result["GAP Species"]["GAP Modeling Database Parameters URL"] = next((
-                f["url"] for f in sb_result["items"][0]["files"] if f["title"] ==
-                                                                    "Machine Readable Habitat Database Parameters"
-            ), None)
-            gap_result["GAP Species"]["GAP ITIS Information URL"] = next((
-                f["url"] for f in sb_result["items"][0]["files"] if f["title"] == "ITIS Information"
-            ), None)
-
-            gap_result["GAP Species"]["GAP Habitat Map File Size"] = next((
-                f["size"] for f in sb_result["items"][0]["files"] if f["title"] ==
-                                                                    "Habitat Map Raster Data"
-            ), None)
-
-            sb_range_map_item = requests.get(
-                f"{gap_result['GAP Species']['GAP Range Map Item']}?format=json&fields=distributionLinks"
-            ).json()
-
-            gap_result["GAP Species"]["GAP Range Map WMS"] = next((
-                l["uri"] for l in sb_range_map_item["distributionLinks"] if l["title"] == "External WMS Service"
-            ), None)
-
-            for i in sb_result["items"][0]["identifiers"]:
-                gap_result["GAP Species"][i["type"]] = i["key"]
-
-            if gap_result["GAP Species"]["GAP Modeling Database Parameters URL"] is not None:
-                gap_result["GAP Species"]["GAP Modeling Database Parameters"] = json.loads(
-                    requests.get(
-                        gap_result["GAP Species"]["GAP Modeling Database Parameters URL"]
-                    ).text
-                )
-
-            if gap_result["GAP Species"]["GAP ITIS Information URL"] is not None:
-                gap_result["GAP Species"]["GAP ITIS Information"] = json.loads(
-                    requests.get(
-                        gap_result["GAP Species"]["GAP ITIS Information URL"]
-                    ).text
-                )
-
-            gap_result["GAP Species"]["Range Bounding Box"] = self.gap_spp_range_bbox(
-                gap_result["GAP Species"]["GAP_SpeciesCode"]
-            )
+            gap_result["GAP Species"] = self.package_gap_species(self.package_habmap_item(sb_result["items"][0]))
 
         return gap_result
+
+    def package_habmap_item(self, habmap_item):
+        item = {
+            "GAP Habitat Map Item": habmap_item["link"]["url"],
+            "GAP Range Map Item": next((
+                l["uri"] for l in habmap_item["webLinks"] if l["title"].find("Range Map") != -1
+            ), None),
+            "GAP Habitat Map WMS": next((
+                l["uri"] for l in habmap_item["distributionLinks"] if "title" in l.keys() and
+                                                                      l["title"] == "External WMS Service"
+            ), None),
+            "GAP Modeling Database Parameters URL": next((
+                f["url"] for f in habmap_item["files"] if "title" in f.keys() and
+                                                          f["title"] == "Machine Readable Habitat Database Parameters"
+            ), None),
+            "GAP ITIS Information URL": next((
+                f["url"] for f in habmap_item["files"] if "title" in f.keys() and f["title"] == "ITIS Information"
+            ), None),
+            "GAP Habitat Map File Size": next((
+                f["size"] for f in habmap_item["files"] if "title" in f.keys() and
+                                                           f["title"] == "Habitat Map Raster Data"
+            ), None),
+            "GAP Habitat Map Last Updated": next((
+                d["dateString"] for d in habmap_item["dates"] if d["type"] == "lastUpdated"
+            ), None)
+        }
+
+        for i in habmap_item["identifiers"]:
+            item[i["type"]] = i["key"]
+
+        return item
+
+    def package_rangemap_item(self, sppcode, rangemap_url):
+        sb_range_map_item = requests.get(
+            f"{rangemap_url}?format=json&fields=distributionLinks"
+        ).json()
+
+        rangemap_package = dict()
+        rangemap_package["GAP Range Map WMS"] = next((
+            l["uri"] for l in sb_range_map_item["distributionLinks"] if l["title"] == "External WMS Service"
+        ), None)
+
+        rangemap_package["Range Bounding Box"] = self.gap_spp_range_bbox(sppcode)
+
+        return rangemap_package
+
+    def package_gap_species(self, hab_map_package):
+        hab_map_package.update(
+            self.package_rangemap_item(
+                sppcode=hab_map_package["GAP_SpeciesCode"],
+                rangemap_url=hab_map_package["GAP Range Map Item"]
+            )
+        )
+
+        if hab_map_package["GAP Modeling Database Parameters URL"] is not None:
+            hab_map_package["GAP Modeling Database Parameters"] = json.loads(
+                requests.get(
+                    hab_map_package["GAP Modeling Database Parameters URL"]
+                ).text
+            )
+
+        if hab_map_package["GAP ITIS Information URL"] is not None:
+            hab_map_package["GAP ITIS Information"] = json.loads(
+                requests.get(
+                    hab_map_package["GAP ITIS Information URL"]
+                ).text
+            )
+
+        return hab_map_package
 
     def gap_spp_range_bbox(self, sppcode):
         '''
@@ -115,3 +123,4 @@ class Gap:
         spp_range = spp_range.to_crs({"init": "epsg:4326"})
 
         return spp_range.total_bounds.tolist()
+

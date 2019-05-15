@@ -4,6 +4,7 @@ import pkg_resources  # part of setuptools
 
 
 # Import bis objects
+from . import bis
 from . import aws
 from . import itis
 from . import worms
