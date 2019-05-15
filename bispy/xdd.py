@@ -28,11 +28,11 @@ url: {self.url}"
 
         xdd_response = requests.get(xdd_result["Processing Metadata"]["Search URL"])
         if xdd_response.status_code != 200:
-            xdd_result["Processing Metadata"]["Message"] = f"The following status code was returned: {xdd_response.status_code}"
+            xdd_result["Processing Metadata"]["Summary Result"] = f"The following status code was returned: {xdd_response.status_code}"
             return resonse_result
         
         elif "success" not in xdd_response.json():
-            xdd_result["Processing Metadata"]["Message"] = "No data returned. Verify request is valid."
+            xdd_result["Processing Metadata"]["Summary Result"] = "No data returned. Verify request is valid."
             return xdd_result
         
         xdd_resultset = xdd_response.json()
@@ -40,7 +40,7 @@ url: {self.url}"
         xdd_result["Processing Metadata"]["Number Documents"] = int(xdd_resultset["success"]["hits"])
         #Handle no returned data
         if xdd_result["Processing Metadata"]["Number Documents"] == 0:
-            xdd_result["Processing Metadata"]["Message"] = "No data returned."
+            xdd_result["Processing Metadata"]["Summary Result"] = "No data returned."
             return xdd_result
         #Handle paging through results
         elif xdd_resultset["success"]["next_page"]:
@@ -54,7 +54,7 @@ url: {self.url}"
                     #This clears Data to ensure we don't use a partial return of data here or leave what was successful?
                     xdd_result.pop("Data", None)
                     xdd_result["Processing Metadata"]["Status"] = "Error"
-                    xdd_result["Processing Metadata"]["Message"] = f"Incomplete results. While paging results the following status code was returned: {xdd_response.status_code}"
+                    xdd_result["Processing Metadata"]["Summary Result"] = f"Incomplete results. While paging results the following status code was returned: {xdd_response.status_code}"
                     return xdd_result
                 else:
                     xdd_next_resultset = xdd_next_response.json()
