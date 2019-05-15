@@ -1,17 +1,16 @@
 import requests
 import os
-from datetime import datetime
+import bis
 
 
 class Iucn:
     def __init__(self):
         self.iucn_api_base = "http://apiv3.iucnredlist.org/api/v3"
         self.iucn_species_api = f"{self.iucn_api_base}/species"
+        self.response_result = bis.response_result()
 
     def search_species(self, scientificname):
-        iucn_result = {}
-        iucn_result["Processing Metadata"] = {}
-        iucn_result["Processing Metadata"]["Date Processed"] = datetime.utcnow().isoformat()
+        iucn_result = self.response_result
         iucn_result["Processing Metadata"]["Summary Result"] = "Not Matched"
         iucn_result["Processing Metadata"]["Search URL"] = f"{self.iucn_species_api}/{scientificname}"
 

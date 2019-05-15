@@ -1,7 +1,11 @@
+import requests
+import bis
+
 class Worms:
     def __init__(self):
         self.description = 'Set of functions for working with the World Register of Marine Species'
         self.filter_ranks = ["kingdom", "phylum", "class", "order", "family", "genus"]
+        self.response_result = bis.response_result()
 
     def get_worms_search_url(self, searchType,target):
         if searchType == "ExactName":
@@ -27,12 +31,8 @@ class Worms:
         return taxonomy
 
     def search(self, scientificname):
-        import requests
-        from datetime import datetime
 
-        wormsResult = dict()
-        wormsResult["Processing Metadata"] = dict()
-        wormsResult["Processing Metadata"]["Date Processed"] = datetime.utcnow().isoformat()
+        wormsResult = self.response_result()
         wormsResult["Processing Metadata"]["Summary Result"] = "Not Matched"
 
         wormsData = []

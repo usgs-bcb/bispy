@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 import json
 import geopandas as gpd
+import bis
 
 
 class Gap:
@@ -9,6 +10,7 @@ class Gap:
         self.gap_species_collection = "527d0a83e4b0850ea0518326"
         self.sb_api_root = "https://www.sciencebase.gov/catalog/items"
         self.sb_geoserver = "https://www.sciencebase.gov/geoserver/CONUS_Range_2001v1/ows"
+        self.response_result = bis.response_result()
 
     def gap_species_search(self, criteria):
         '''
@@ -24,11 +26,8 @@ class Gap:
         Species document with all the information assembled for the given species.
         '''
 
-        gap_result= {}
-        gap_result["Processing Metadata"] = {
-            "Date Processed": datetime.utcnow().isoformat(),
-            "Summary Result": "Not Matched"
-        }
+        gap_result = self.response_result
+        gap_result["Processing Metadata"]["Summary Result"] = "Not Matched"
 
         identifier_param = {
             "key": criteria
