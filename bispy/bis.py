@@ -35,7 +35,7 @@ def response_result():
     response_result = dict()
     response_result["Processing Metadata"] = dict()
     response_result["Processing Metadata"]["Status"] = "Error"
-    response_result["Processing Metadata"]["Message"] = "No Message Recorded"
+    response_result["Processing Metadata"]["Summary Result"] = "No Message Recorded"
     response_result["Processing Metadata"]["Date Processed"] = datetime.utcnow().isoformat()
     response_result["Processing Metadata"]["Number Documents"] = 0
     response_result["Processing Metadata"]["Search URL"] = ""

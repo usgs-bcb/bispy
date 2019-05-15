@@ -1,6 +1,5 @@
-from datetime import datetime
-import requests
 import bis
+import requests
 
 class Xdd:
     def __init__(self, search_term=''):
