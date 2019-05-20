@@ -1,17 +1,17 @@
+import requests
+import xmltodict
+import bis
+
 class Natureserve:
     def __init__(self):
         self.description = "Set of functions for working with the NatureServe APIs"
         self.ns_api_base = "https://services.natureserve.org/idd/rest/v1"
         self.us_name_search_api = "nationalSpecies/summary/nameSearch?nationCode=US"
+        self.response_result = bis.response_result()
 
     def search(self, scientificname):
-        import requests
-        import xmltodict
-        from datetime import datetime
 
-        result = dict()
-        result["Processing Metadata"] = dict()
-        result["Processing Metadata"]["Date Processed"] = datetime.utcnow().isoformat()
+        result = self.response_result
         result["Processing Metadata"]["Summary Result"] = "Not Matched"
         result["Processing Metadata"]["Search URL"] = \
             f"{self.ns_api_base}/{self.us_name_search_api}&name={scientificname}"
