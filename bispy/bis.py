@@ -30,13 +30,13 @@ class Sciencebase:
 
         return item_list
 
-
-def response_result():
-    response_result = dict()
-    response_result["Processing Metadata"] = dict()
-    response_result["Processing Metadata"]["Status"] = "Error"
-    response_result["Processing Metadata"]["Summary Result"] = "No Message Recorded"
-    response_result["Processing Metadata"]["Date Processed"] = datetime.utcnow().isoformat()
-    response_result["Processing Metadata"]["Number Documents"] = 0
-    response_result["Processing Metadata"]["Search URL"] = ""
-    return response_result
+class Utils:
+    def __init__(self):
+        self.data = {}
+  
+    def processing_metadata(self, default_status="Error"):
+        processing_metadata = {
+            "Status": default_status,
+            "Date Processed": datetime.utcnow().isoformat()
+        }
+        return processing_metadata
