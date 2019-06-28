@@ -1,4 +1,5 @@
 import requests
+from datetime import datetime
 
 
 class Sciencebase:
@@ -29,3 +30,13 @@ class Sciencebase:
 
         return item_list
 
+class Utils:
+    def __init__(self):
+        self.data = {}
+  
+    def processing_metadata(self, default_status="Error"):
+        processing_metadata = {
+            "Status": default_status,
+            "Date Processed": datetime.utcnow().isoformat()
+        }
+        return processing_metadata

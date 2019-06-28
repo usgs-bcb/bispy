@@ -2,6 +2,7 @@ import requests
 from datetime import datetime
 import json
 import geopandas as gpd
+import bis
 
 
 class Gap:
@@ -9,8 +10,24 @@ class Gap:
         self.gap_species_collection = "527d0a83e4b0850ea0518326"
         self.sb_api_root = "https://www.sciencebase.gov/catalog/items"
         self.sb_geoserver = "https://www.sciencebase.gov/geoserver/CONUS_Range_2001v1/ows"
+        self.response_result = bis.response_result()
 
     def gap_species_search(self, criteria):
+        '''
+        This function looks for a GAP species in the core habitat maps collection in ScienceBase. If it finds a match,
+        it assembles a combined GAP species document from available information in ScienceBase. This includes the basic
+        metadata in the item (identifiers, names, etc.), the database parameters file, a cached set of ITIS
+        information, and links to habitat map and range map items and services. In addition, the total bounding box
+        for all seasons is calculated by retrieving the WFS feature for the range map. This provides a basic idea of
+        the geospatial coverage to be expected for a species.
+
+        :param criteria: Can be one of scientific name, common name, ITIS TSN, or GAP species code
+        :return: Dictionary containing at least the processing metadata (date/time and URL used) and will contain a GAP
+        Species document with all the information assembled for the given species.
+        '''
+
+        gap_result = self.response_result
+        gap_result["Processing Metadata"]["Summary Result"] = "Not Matched"
         gap_result= {}
         gap_result["Processing Metadata"] = {
             "Date Processed": datetime.utcnow().isoformat(),
