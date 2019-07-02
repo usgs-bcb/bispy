@@ -2,15 +2,18 @@ import requests
 from datetime import datetime
 import json
 import geopandas as gpd
-import bis
+from shapely.geometry import box
+from . import bis
 
+bis_utils = bis.Utils()
 
 class Gap:
     def __init__(self):
         self.gap_species_collection = "527d0a83e4b0850ea0518326"
         self.sb_api_root = "https://www.sciencebase.gov/catalog/items"
         self.sb_geoserver = "https://www.sciencebase.gov/geoserver/CONUS_Range_2001v1/ows"
-        self.response_result = bis.response_result()
+        self.bis_api_gap_state_metrics = "https://sciencebase.usgs.gov/staging/bis/api/v1/gapmetrics/species/protection?feature_id=US_States_and_Territories%3Astate_fipscode%3A"
+        self.response_result = bis_utils.processing_metadata()
 
     def gap_species_search(self, criteria):
         '''
@@ -46,6 +49,7 @@ class Gap:
 
         if sb_result["total"] == 1:
             gap_result["GAP Species"] = self.package_gap_species(self.package_habmap_item(sb_result["items"][0]))
+            gap_result["Processing Metadata"]["Summary Result"] = "Exact Match"
 
         return gap_result
 
@@ -141,3 +145,22 @@ class Gap:
 
         return spp_range.total_bounds.tolist()
 
+    def gap_metrics_species(self, us_states, GAP_SpeciesCode, range_bbox):
+        species_metrics_report = {
+            "GAP_SpeciesCode": GAP_SpeciesCode,
+            "State Metrics": list()
+        }
+
+        b = box(range_bbox[0], range_bbox[1], range_bbox[2], range_bbox[3])
+        spp_bbox = gpd.GeoDataFrame(gpd.GeoSeries(b), columns=['geometry'])
+        spp_bbox.crs = {'init': 'epsg:4326'}
+        spp_bbox = spp_bbox.to_crs(us_states.crs)
+        intersections = gpd.overlay(spp_bbox, us_states, how='intersection')
+        for fips_code in intersections["STATEFP"]:
+            state_gap_metrics = requests.get(f"{self.bis_api_gap_state_metrics}{fips_code}").json()
+            species_state_metrics = [i for i in state_gap_metrics["result"] if
+                                     i["sppcode"] == GAP_SpeciesCode]
+            if len(species_state_metrics) > 0:
+                species_metrics_report["State Metrics"].extend(species_state_metrics)
+
+        return species_metrics_report

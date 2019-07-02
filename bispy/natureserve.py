@@ -1,13 +1,15 @@
 import requests
 import xmltodict
-import bis
+from . import bis
+
+bis_utils = bis.Utils()
 
 class Natureserve:
     def __init__(self):
         self.description = "Set of functions for working with the NatureServe APIs"
         self.ns_api_base = "https://services.natureserve.org/idd/rest/v1"
         self.us_name_search_api = "nationalSpecies/summary/nameSearch?nationCode=US"
-        self.response_result = bis.response_result()
+        self.response_result = bis_utils.processing_metadata()
 
     def search(self, scientificname):
 
@@ -36,8 +38,12 @@ class Natureserve:
                     )
                     if ns_species is not None:
                         result["NatureServe Species"] = ns_species
+                        result["Processing Metadata"]["Summary Result"] = "Multiple Match"
+                        result["Processing Metadata"]["Status"] = "Success"
                 else:
                     result["NatureServe Species"] = ns_dict["speciesList"]["species"]
+                    result["Processing Metadata"]["Summary Result"] = "Single Match"
+                    result["Processing Metadata"]["Status"] = "Success"
 
         return result
 

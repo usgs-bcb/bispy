@@ -1,12 +1,13 @@
 from datetime import datetime
 import requests
-import bis
+from . import bis
 
+bis_utils = bis.Utils()
 
 class Itis:
     def __init__(self):
         self.description = "Set of functions for interacting with ITIS"
-        self.response_result = bis.response_result()
+        self.response_result = bis_utils.processing_metadata()
 
     def package_itis_json(self, itisDoc):
         itis_data = {}
@@ -21,7 +22,8 @@ class Itis:
             for key in primaryKeysToPop:
                 itisDoc.pop(key, None)
 
-            # Make a clean structure of the taconomic hierarchy
+            # Make a clean structure of the taxonomic hierarchy
+            # Make a clean structure of the taxonomic hierarchy
             itisDoc["taxonomy"] = []
             for rank in itisDoc['hierarchySoFarWRanks'][0][itisDoc['hierarchySoFarWRanks'][0].find(':$') + 2:-1].split(
                     "$"):
@@ -178,5 +180,7 @@ class Itis:
                 # If there are multiple acceptedTSN values for multiple returned exact match records, we don't yet know what to do with these.
                 # Some combination of factors in the data or a deeper level search from the source may come up with a way to make the algorithm more sophisticated.
                 itis_result["Processing Metadata"]["Summary Result"] = "Indeterminate Results"
+
+        itis_result["Processing Metadata"]["Status"] = itis_result["Processing Metadata"]["Summary Result"]
 
         return itis_result

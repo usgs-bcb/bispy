@@ -1,10 +1,12 @@
-import bis
+from . import bis
 import requests
+
+bis_utils = bis.Utils()
 
 class Xdd:
     def __init__(self, search_term=''):
         self.xdd_api_base = "https://geodeepdive.org/api"
-        self.response_result = bis.response_result()
+        self.response_result = bis_utils.processing_metadata()
         self.search_term = search_term
         self.url = ''
 
@@ -24,11 +26,12 @@ url: {self.url}"
         self.search_term = search_term
         self.url = f"{api_route}&term={search_term}"
         xdd_result["Processing Metadata"]["Search URL"] = self.url
+        xdd_result["Processing Metadata"]["Search Term"] = search_term
 
         xdd_response = requests.get(xdd_result["Processing Metadata"]["Search URL"])
         if xdd_response.status_code != 200:
             xdd_result["Processing Metadata"]["Summary Result"] = f"The following status code was returned: {xdd_response.status_code}"
-            return resonse_result
+            return xdd_result
         
         elif "success" not in xdd_response.json():
             xdd_result["Processing Metadata"]["Summary Result"] = "No data returned. Verify request is valid."
@@ -53,7 +56,9 @@ url: {self.url}"
                     #This clears Data to ensure we don't use a partial return of data here or leave what was successful?
                     xdd_result.pop("Data", None)
                     xdd_result["Processing Metadata"]["Status"] = "Error"
-                    xdd_result["Processing Metadata"]["Summary Result"] = f"Incomplete results. While paging results the following status code was returned: {xdd_response.status_code}"
+                    xdd_result["Processing Metadata"]["Summary Result"] = \
+                        f"Incomplete results. While paging results the following status code was returned: " \
+                        f"{xdd_response.status_code}"
                     return xdd_result
                 else:
                     xdd_next_resultset = xdd_next_response.json()

@@ -11,21 +11,24 @@
 __pycache__/*
 .cache/*
 .*.swp
-*/.ipynb_checkpoints/*
+.ipynb_checkpoints/*
+~$*
 
 # Project files
 .ropeproject
 .project
 .pydevproject
 .settings
-.idea
+.idea*
 tags
+.DS_Store
+.idea/*
 
 # Package files
 *.egg
 *.eggs/
 .installed.cfg
-*.egg-info
+*.egg-info*
 
 # Unittest and coverage
 htmlcov/*
@@ -47,3 +50,4 @@ MANIFEST
 
 # Per-project virtualenvs
 .venv*/
+venv/*
