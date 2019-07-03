@@ -1,6 +1,9 @@
 import requests
 from datetime import datetime
 from collections import Counter
+import random
+import os
+import json
 
 
 class Sciencebase:
@@ -44,6 +47,56 @@ class Utils:
             }
         }
         return packaged_stub
+
+    def doc_cache(self, cache_path, cache_data=None, return_sample=True):
+        '''
+        Caches a list of dictionaries as a JSON document array to a specified relative path and returns a sample.
+
+        :param cache_path: relative file path to write to; will overwrite if it exists
+        :param cache_data: list of dictionaries to cache as JSON document array
+        :param return_sample: return a random sample for verification
+        :return:
+        '''
+        if cache_data is not None:
+            if not isinstance(cache_data, list):
+                return "Error: cache_data needs to be a list of dictionaries"
+
+            if len(cache_data) == 0:
+                return "Error: cache_data needs to be a list with at least one dictionary"
+
+            if not isinstance(cache_data[0], dict):
+                return "Error: cache_data needs to be a list of dictionaries"
+
+            try:
+                with open(cache_path, "w") as f:
+                    f.write(json.dumps(cache_data))
+            except Exception as e:
+                return f"Error: {e}"
+
+        if not return_sample:
+            return "Success"
+        else:
+            if not os.path.exists(cache_path):
+                return "Error: file does not exist"
+
+            try:
+                with open(cache_path, "r") as f:
+                    the_cache = json.loads(f.read())
+            except Exception as e:
+                return f"Error: {e}"
+
+            if not isinstance(the_cache, list):
+                return "Error: file does not contain an array"
+
+            if not isinstance(the_cache[0], dict):
+                return "Error: file does not contain an array of JSON objects (documents)"
+
+            doc_number = random.randint(0, len(the_cache) - 1)
+            return {
+                "Doc Cache File": cache_path,
+                "Number of Documents in Cache": len(the_cache),
+                f"Document Number {doc_number}": the_cache[doc_number]
+            }
 
 
 class AttributeValueCount:
