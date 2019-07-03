@@ -14,6 +14,7 @@ from . import xdd
 from . import gap
 from . import iucn
 from . import sgcn
+from . import gbif
 
 # provide version, PEP - three components ("major.minor.micro")
 __version__ = pkg_resources.require("bispy")[0].version
