@@ -4,6 +4,7 @@ from collections import Counter
 import random
 import os
 import json
+from genson import SchemaBuilder
 
 
 class Sciencebase:
@@ -97,6 +98,38 @@ class Utils:
                 "Number of Documents in Cache": len(the_cache),
                 f"Document Number {doc_number}": the_cache[doc_number]
             }
+
+    def generate_json_schema(self, data):
+        '''
+        Uses the genson package to introspect json type data and generate the skeleton of a JSON Schema document
+        (Draft 6) for further documentation.
+
+        :param data: must be one of the following - python dictionary object, python list of dictionaries, json string
+        that can be loaded to a dictionary or list of dictionaries
+        :return: json string containing the generated json schema skeleton
+        '''
+        if isinstance(data, str):
+            data = json.loads(data)
+
+        if isinstance(data, dict):
+            data = [data]
+
+        if len(data) == 0:
+            return "Error: your list of objects (dictionaries) must contain at least one object to process"
+
+        if not isinstance(data[0], dict):
+            return "Error: your list must contain a dictionary type object"
+
+        try:
+            builder = SchemaBuilder()
+            builder.add_schema({"type": "object", "properties": {}})
+            for r in data:
+                for k, v in r.items():
+                    builder.add_object({k: v})
+        except Exception as e:
+            return f"Error: {e}"
+
+        return builder.to_json()
 
 
 class AttributeValueCount:
