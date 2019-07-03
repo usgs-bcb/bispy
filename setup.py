@@ -14,6 +14,7 @@ setup(name='bispy',
             'elasticsearch',
             'xmltodict',
             'geopandas',
-            'owslib'
+            'owslib',
+            'genson'
       ],
       zip_safe=False)
