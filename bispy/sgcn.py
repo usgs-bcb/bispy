@@ -9,15 +9,11 @@ class Search:
     def search(self, name):
         record = {
             "search_api": f"{self.sgcn_spp_search_api}?scientificname={name}",
-            "search_date": datetime.utcnow().isoformat(),
-            "results": list()
+            "search_date": datetime.utcnow().isoformat()
         }
 
         r_search = requests.get(record["search_api"]).json()
-
-        record["search_results"] = len(r_search["hits"]["hits"])
-
-        for hit in r_search["hits"]["hits"]:
-            record["results"].append(hit["_source"]["properties"])
+        record["sgcn_species"] = next((i["_source"]["properties"] for i in r_search["hits"]["hits"]
+                                       if i["_source"]["properties"]["scientificname"] == name), None)
 
         return record
