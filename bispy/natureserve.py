@@ -4,6 +4,7 @@ from . import bis
 
 bis_utils = bis.Utils()
 
+
 class Natureserve:
     def __init__(self):
         self.description = "Set of functions for working with the NatureServe APIs"
@@ -11,10 +12,12 @@ class Natureserve:
         self.us_name_search_api = "nationalSpecies/summary/nameSearch?nationCode=US"
         self.response_result = bis_utils.processing_metadata()
 
-    def search(self, scientificname):
+    def search(self, scientificname, name_source=None):
 
         result = self.response_result
         result["Processing Metadata"]["Summary Result"] = "Not Matched"
+        result["Processing Metadata"]["Scientific Name"] = scientificname
+        result["Processing Metadata"]["Name Source"] = name_source
         result["Processing Metadata"]["Search URL"] = \
             f"{self.ns_api_base}/{self.us_name_search_api}&name={scientificname}"
 
@@ -26,7 +29,7 @@ class Natureserve:
             ns_dict = xmltodict.parse(ns_api_result.text, dict_constructor=dict)
 
             if "species" not in ns_dict["speciesList"].keys():
-                return None
+                return result
             else:
                 if isinstance(ns_dict["speciesList"]["species"], list):
                     ns_species = next(

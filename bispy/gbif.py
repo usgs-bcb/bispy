@@ -11,47 +11,47 @@ class Gbif:
         self.gbif_spp_occ_summary_api = "https://api.gbif.org/v1/occurrence/search?country=US&limit=0&facet=institutionCode&facet=year&facet=basisOfRecord&{}={}"
         self.gbif_species_suggest_stub = "https://api.gbif.org/v1/species/suggest?q={}"
 
-    def summarize_us_species(self, scientific_name):
-        gbif_spp_search_results = requests.get(self.gbif_species_suggest_stub.format(scientific_name)).json()
+    def summarize_us_species(self, scientificname, name_source=None):
+        result = self.response_result
+        result["Processing Metadata"]["Summary Result"] = "Not Matched"
+        result["Processing Metadata"]["Scientific Name"] = scientificname
+        result["Processing Metadata"]["Name Source"] = name_source
+        result["Processing Metadata"]["Search URL"] = self.gbif_species_suggest_stub.format(scientificname)
+        result["Processing Metadata"]["API"] = list()
+
+        gbif_spp_search_results = requests.get(self.gbif_species_suggest_stub.format(scientificname)).json()
 
         if len(gbif_spp_search_results) == 0:
-            return None
+            result["Processing Metadata"]["Status"] = "failure"
+            return result
 
-        species_summary = {
-            "Processing Metadata": {
-                "Date Processed": datetime.utcnow().isoformat(),
-                "Scientific Name": scientific_name,
-                "API": [
-                    self.gbif_species_suggest_stub.format(scientific_name)
-                ],
-                "GBIF Species Suggestions": len(gbif_spp_search_results)
-            },
-            "GBIF Species Record": gbif_spp_search_results[0]
-        }
+        result["GBIF Species Record"] = gbif_spp_search_results[0]
 
-        if "nubKey" in species_summary["GBIF Species Record"].keys():
-            species_summary["Processing Metadata"]["API"].append(
+        if "nubKey" in result["GBIF Species Record"].keys():
+            result["Processing Metadata"]["API"].append(
                 self.gbif_spp_occ_summary_api.format(
                     "taxon-Key",
-                    species_summary["GBIF Species Record"]["nubKey"]
+                    result["GBIF Species Record"]["nubKey"]
                 )
             )
         else:
-            species_summary["Processing Metadata"]["API"].append(
+            result["Processing Metadata"]["API"].append(
                 self.gbif_spp_occ_summary_api.format(
                     "scientificName",
-                    scientific_name
+                    scientificname
                 )
             )
 
         gbif_occ_results = requests.get(
-            species_summary["Processing Metadata"]["API"][-1]
+            result["Processing Metadata"]["API"][-1]
         ).json()
 
         for key in ["endOfRecords", "limit", "offset", "results"]:
             del gbif_occ_results[key]
 
-        species_summary["Occurrence Summary"] = gbif_occ_results
+        result["Processing Metadata"]["Summary Result"] = "Matched"
+        result["Processing Metadata"]["Status"] = "success"
+        result["Occurrence Summary"] = gbif_occ_results
 
-        return species_summary
+        return result
 
