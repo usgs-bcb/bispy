@@ -2,6 +2,7 @@ import requests
 import xmltodict
 from bs4 import BeautifulSoup
 from . import bis
+from urllib.parse import urlparse
 
 bis_utils = bis.Utils()
 
@@ -16,26 +17,27 @@ class Tess:
 
         tess_result = self.response_result
         if criteria.isdigit():
-            tess_result["Processing Metadata"]["Search URL"] = f'{self.tess_api_base}[TSN={criteria}]'
+            tess_result["processing_metadata"]["api"] = f'{self.tess_api_base}[TSN={criteria}]'
         else:
-            tess_result["Processing Metadata"]["Search URL"] = f'{self.tess_api_base}[SCINAME="{criteria}"]'
+            tess_result["processing_metadata"]["api"] = f'{self.tess_api_base}[SCINAME="{criteria}"]'
 
         # Query the TESS XQuery service
-        tess_response = requests.get(tess_result["Processing Metadata"]["Search URL"])
+        tess_response = requests.get(tess_result["processing_metadata"]["api"])
 
         if tess_response.status_code != 200:
-            tess_result["Processing Metadata"]["Status"] = f"HTTP Status Code: {tess_response.status_code}"
+            tess_result["processing_metadata"]["status"] = "error"
+            tess_result["processing_metadata"]["status_message"] = f"HTTP Status Code: {tess_response.status_code}"
             return tess_result
 
         # Build an unordered dict from the TESS XML response (we don't care about ordering for our purposes here)
         tessDict = xmltodict.parse(tess_response.text, dict_constructor=dict)
 
         if "results" not in tessDict.keys() or tessDict["results"] is None:
-            tess_result["Processing Metadata"]["Status"] = "No results"
+            tess_result["processing_metadata"]["status"] = "failure"
             return tess_result
 
-        tess_result["Processing Metadata"]["Status"] = "Successful Match"
-        tess_result["TESS Species"] = tessDict["results"]
+        tess_result["processing_metadata"]["status"] = "success"
+        tess_result["tess_species"] = tessDict["results"]
 
         return tess_result
 
@@ -66,6 +68,11 @@ class Ecos:
                 'Table Name': 'Habitat Conservation Plans (HCP)'
             }
         ]
+        self.property_mapping = {
+            "title": "document_title",
+            "link": "document_link",
+            "date": "publication_date"
+        }
         self.description = 'Set of functions for working with other parts of ECOS'
         self.response_result = bis_utils.processing_metadata()
 
@@ -84,7 +91,7 @@ class Ecos:
 
     def scrape_ecos(self, ecos_url):
         extracted_data = self.response_result
-        extracted_data["Processing Metadata"]["Search URL"] = ecos_url
+        extracted_data["processing_metadata"]["api"] = ecos_url
 
         page = requests.get(ecos_url)
         soup = BeautifulSoup(page.content, "html.parser")
@@ -92,17 +99,18 @@ class Ecos:
         if not soup:
             return extracted_data
 
-        extracted_data["Processing Metadata"]["Status"] = "Page Successfully Retrieved"
-        extracted_data["ITIS TSN"] = self.itis_tsn(soup)
+        extracted_data["processing_metadata"]["status"] = "success"
+        extracted_data["ecos_species_summary"] = dict()
+        extracted_data["ecos_species_summary"]["ITIS TSN"] = self.itis_tsn(soup)
 
         html_title = soup.find('title')
 
         if html_title.text.find('(') > 0:
-            extracted_data["Scientific Name"] = html_title.text.split('(')[1].split(')')[0].strip()
-            extracted_data["Common Name"] = html_title.text.split('(')[0].replace('Species Profile for', '').strip()
+            extracted_data["ecos_species_summary"]["Scientific Name"] = html_title.text.split('(')[1].split(')')[0].strip()
+            extracted_data["ecos_species_summary"]["Common Name"] = html_title.text.split('(')[0].replace('Species Profile for', '').strip()
         else:
-            extracted_data["Scientific Name"] = html_title.text.replace('Species Profile for', '').strip()
-            extracted_data["Common Name"] = None
+            extracted_data["ecos_species_summary"]["Scientific Name"] = html_title.text.replace('Species Profile for', '').strip()
+            extracted_data["ecos_species_summary"]["Common Name"] = None
 
         for section in soup.findAll('div', {'class': 'table-caption'}):
             table_title = section.text.replace("(learn more)", "").strip()
@@ -120,11 +128,11 @@ class Ecos:
                 if next((t for t in self.property_registry if t == this_table), None) is not None:
                     tbody = next_table.find('tbody')
                     if tbody is not None:
-                        extracted_data[this_table["Table Name"]] = list()
+                        extracted_data["ecos_species_summary"][this_table["Table Name"]] = list()
                         for row in tbody.find_all('tr'):
                             this_record = dict()
                             for i, column in enumerate(row.select('td')):
-                                if this_table["Table Name"] == "Status Summary" and \
+                                if this_table["Table Name"] == "Current Listing Status Summary" and \
                                         this_table["Properties"][i] == "Status":
                                     value = self.extract_js_function_value(column.text.strip())
                                 else:
@@ -133,8 +141,17 @@ class Ecos:
                                 this_record[this_table["Properties"][i]] = value
 
                                 if column.find('a'):
-                                    this_record[f'{this_table["Properties"][i]}_link'] = column.find('a')["href"]
+                                    link_href = column.find('a')["href"]
+                                    parsed_link = urlparse(link_href)
+                                    if len(parsed_link.scheme) == 0:
+                                        parsed_parent_url = urlparse(ecos_url)
+                                        link_href = f"{parsed_parent_url.scheme}://{parsed_parent_url.netloc}{link_href}"
+                                    this_record["document_link"] = link_href
 
-                            extracted_data[this_table["Table Name"]].append(this_record)
+                            for k, v in this_record.items():
+                                if k.lower() in self.property_mapping.keys():
+                                    this_record[self.property_mapping[k.lower()]] = this_record.pop(k)
+
+                            extracted_data["ecos_species_summary"][this_table["Table Name"]].append(this_record)
 
         return extracted_data

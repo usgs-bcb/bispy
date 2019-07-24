@@ -9,7 +9,7 @@ from . import aws
 from . import itis
 from . import worms
 from . import natureserve
-from . import tess
+from . import ecos
 from . import xdd
 from . import gap
 from . import iucn

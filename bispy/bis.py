@@ -40,11 +40,11 @@ class Utils:
     def __init__(self):
         self.data = {}
   
-    def processing_metadata(self, default_status="Error"):
+    def processing_metadata(self, default_status="error"):
         packaged_stub = {
-            "Processing Metadata": {
-                "Status": default_status,
-                "Date Processed": datetime.utcnow().isoformat()
+            "processing_metadata": {
+                "status": default_status,
+                "date_processed": datetime.utcnow().isoformat()
             }
         }
         return packaged_stub
