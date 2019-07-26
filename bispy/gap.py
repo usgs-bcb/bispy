@@ -12,10 +12,10 @@ class Gap:
         self.gap_species_collection = "527d0a83e4b0850ea0518326"
         self.sb_api_root = "https://www.sciencebase.gov/catalog/items"
         self.sb_geoserver = "https://www.sciencebase.gov/geoserver/CONUS_Range_2001v1/ows"
-        self.bis_api_gap_state_metrics = "https://sciencebase.usgs.gov/staging/bis/api/v1/gapmetrics/species/protection?feature_id=US_States_and_Territories%3Astate_fipscode%3A"
+        self.bis_api_gap_state_metrics = "https://api.sciencebase.gov/bis-api/api/v1/gapmetrics/species/protection?feature_id=US_States_and_Territories%3Astate_fipscode%3A"
         self.response_result = bis_utils.processing_metadata()
 
-    def gap_species_search(self, criteria):
+    def gap_species_search(self, scientificname, name_source=None, *args):
         '''
         This function looks for a GAP species in the core habitat maps collection in ScienceBase. If it finds a match,
         it assembles a combined GAP species document from available information in ScienceBase. This includes the basic
@@ -24,32 +24,36 @@ class Gap:
         for all seasons is calculated by retrieving the WFS feature for the range map. This provides a basic idea of
         the geospatial coverage to be expected for a species.
 
-        :param criteria: Can be one of scientific name, common name, ITIS TSN, or GAP species code
+        :param scientificname: scientific name to search
         :return: Dictionary containing at least the processing metadata (date/time and URL used) and will contain a GAP
         Species document with all the information assembled for the given species.
         '''
 
         gap_result = self.response_result
-        gap_result["Processing Metadata"]["Summary Result"] = "Not Matched"
-        gap_result= {}
-        gap_result["Processing Metadata"] = {
-            "Date Processed": datetime.utcnow().isoformat(),
-            "Summary Result": "Not Matched"
+        gap_result["processing_metadata"]["status"] = "failure"
+        gap_result["processing_metadata"]["status_message"] = "Not Matched"
+
+        gap_result["parameters"] = {
+            "Scientific Name": scientificname
         }
 
+        if name_source is not None:
+            gap_result["parameters"]["Name Source"] = name_source
+
         identifier_param = {
-            "key": criteria
+            "key": scientificname
         }
-        gap_result["Processing Metadata"]["Search URL"] = \
+        gap_result["processing_metadata"]["api"] = \
             f"{self.sb_api_root}?parentId={self.gap_species_collection}" \
             f"&format=json&fields=identifiers,files,webLinks,distributionLinks,dates" \
             f"&filter=itemIdentifier%3D{identifier_param}"
 
-        sb_result = requests.get(gap_result["Processing Metadata"]["Search URL"]).json()
+        sb_result = requests.get(gap_result["processing_metadata"]["api"]).json()
 
         if sb_result["total"] == 1:
             gap_result["GAP Species"] = self.package_gap_species(self.package_habmap_item(sb_result["items"][0]))
-            gap_result["Processing Metadata"]["Summary Result"] = "Exact Match"
+            gap_result["processing_metadata"]["status"] = "success"
+            gap_result["processing_metadata"]["status_message"] = "Exact Match"
 
         return gap_result
 

@@ -5,6 +5,7 @@ import random
 import os
 import json
 from genson import SchemaBuilder
+import pkg_resources
 
 
 class Sciencebase:
@@ -130,6 +131,60 @@ class Utils:
             return f"Error: {e}"
 
         return builder.to_json()
+
+    def alter_keys(self, item, mappings, layer=None, key=None):
+        if layer is None:
+            layer = item
+        if isinstance(item, dict):
+            for k, v in item.items():
+                self.alter_keys(v, mappings, item, k)
+        if isinstance(key, str):
+            for orig, new in mappings.items():
+                if orig in layer.keys():
+                    layer[new] = layer.pop(orig)
+
+        return layer
+
+    def integrate_recordset(self, recordset, target_properties=None):
+        '''
+        This function is a rudimentary attempt at providing a simplistic integration routine for simply mapping
+        field names from specified source datasets to a set of preferred property names from the "common_properties"
+        JSON Schema set of definitions. I included an aliases list there as an extra parameter on properties to house
+        known aliases from known datasets. Future work needs to also include at least a schema compliance check at this
+        point.
+
+        :param recordset:
+        :param target_properties:
+        :return: recordset with applicable property names registered as aliases mapped to target/preferred names
+        '''
+
+        path = 'resources/common_properties.json'
+        filepath = pkg_resources.resource_filename(__name__, path)
+        with open(filepath, 'r') as f:
+            common_properties = json.loads(f.read())
+            f.close()
+
+        # This is completely stupid, but I can't get my head around a combination of list and dict
+        # comprehension to do this more elegantly right now
+        mappings = dict()
+        for k, v in common_properties["definitions"].items():
+            if target_properties is None:
+                if "aliases" in common_properties["definitions"][k]:
+                    for alias in common_properties["definitions"][k]["aliases"]:
+                        mappings[alias] = k
+            else:
+                if "aliases" in common_properties["definitions"][k] and k in target_properties:
+                    for alias in common_properties["definitions"][k]["aliases"]:
+                        mappings[alias] = k
+
+        if isinstance(recordset, dict):
+            recordset = [recordset]
+
+        new_recordset = list()
+        for record in recordset:
+            new_recordset.append(self.alter_keys(record, mappings))
+
+        return recordset
 
 
 class AttributeValueCount:

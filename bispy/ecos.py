@@ -148,10 +148,12 @@ class Ecos:
                                         link_href = f"{parsed_parent_url.scheme}://{parsed_parent_url.netloc}{link_href}"
                                     this_record["document_link"] = link_href
 
-                            for k, v in this_record.items():
-                                if k.lower() in self.property_mapping.keys():
-                                    this_record[self.property_mapping[k.lower()]] = this_record.pop(k)
-
                             extracted_data["ecos_species_summary"][this_table["Table Name"]].append(this_record)
+
+        if "ecos_species_summary" in extracted_data.keys():
+            extracted_data["ecos_species_summary"] = bis_utils.integrate_recordset(
+                extracted_data["ecos_species_summary"],
+                target_properties=["itis_tsn"]
+            )
 
         return extracted_data

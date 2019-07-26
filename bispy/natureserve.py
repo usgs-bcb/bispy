@@ -15,13 +15,17 @@ class Natureserve:
     def search(self, scientificname, name_source=None):
 
         result = self.response_result
-        result["Processing Metadata"]["Summary Result"] = "Not Matched"
-        result["Processing Metadata"]["Scientific Name"] = scientificname
-        result["Processing Metadata"]["Name Source"] = name_source
-        result["Processing Metadata"]["Search URL"] = \
+        result["processing_metadata"]["status"] = "failure"
+        result["processing_metadata"]["status_message"] = "Not Matched"
+        result["processing_metadata"]["api"] = \
             f"{self.ns_api_base}/{self.us_name_search_api}&name={scientificname}"
 
-        ns_api_result = requests.get(result["Processing Metadata"]["Search URL"])
+        result["parameters"] = {
+            "Scientific Name": scientificname,
+            "Name Source": name_source
+        }
+
+        ns_api_result = requests.get(result["processing_metadata"]["api"])
 
         if ns_api_result.status_code != 200:
             return None
@@ -41,12 +45,12 @@ class Natureserve:
                     )
                     if ns_species is not None:
                         result["NatureServe Species"] = ns_species
-                        result["Processing Metadata"]["Summary Result"] = "Multiple Match"
-                        result["Processing Metadata"]["Status"] = "Success"
+                        result["processing_metadata"]["status"] = "success"
+                        result["processing_metadata"]["status_message"] = "Multiple Match"
                 else:
                     result["NatureServe Species"] = ns_dict["speciesList"]["species"]
-                    result["Processing Metadata"]["Summary Result"] = "Single Match"
-                    result["Processing Metadata"]["Status"] = "Success"
+                    result["processing_metadata"]["status"] = "success"
+                    result["processing_metadata"]["status_message"] = "Single Match"
 
         return result
 
