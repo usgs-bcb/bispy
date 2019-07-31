@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
 from . import bis
+import re
 
 bis_utils = bis.Utils()
 
@@ -58,21 +59,18 @@ class Itis:
     def get_itis_search_url(self, searchstr, fuzzy=False, validAccepted=True):
         fuzzyLevel = "~0.8"
 
-        # Default to using name without indicator as the search term
-        itisTerm = "nameWOInd"
-
-        # "var." and "ssp." indicate that the string has population and variation indicators and should use the WInd service
-        if searchstr.find("var.") > 0 or searchstr.find("ssp.") > 0 or searchstr.find(" x ") > 0:
-            itisTerm = "nameWInd"
-
-        try:
-            int(searchstr)
+        if isinstance(searchstr, int):
             itisTerm = "tsn"
-        except:
-            pass
+        else:
+            # "var." and "ssp." indicate that the string has population and variation indicators and should use the WInd service
+            if searchstr.find("var.") > 0 or searchstr.find("ssp.") > 0 or searchstr.find(" x ") > 0:
+                itisTerm = "nameWInd"
+            else:
+                itisTerm = "nameWOInd"
 
-        # Put the search term together with the scientific name value including the escape character sequence that ITIS needs in the name criteria
-        itisSearchURL = "http://services.itis.gov/?wt=json&rows=10&q=" + itisTerm + ":" + searchstr.replace(" ", "\%20")
+        escaped_criteria = '\%20'.join(re.split(' +', searchstr))
+        
+        itisSearchURL = "http://services.itis.gov/?wt=json&rows=10&q=" + itisTerm + ":" + escaped_criteria
 
         # Add the specified fuzzy search level if asked for
         if fuzzy:
