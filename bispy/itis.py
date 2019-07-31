@@ -59,28 +59,26 @@ class Itis:
     def get_itis_search_url(self, searchstr, fuzzy=False, validAccepted=True):
         fuzzyLevel = "~0.8"
 
-        if isinstance(searchstr, int):
-            itisTerm = "tsn"
+        api_stub = "https://services.itis.gov/?wt=json&rows=10&q="
+        search_term = "nameWOInd"
+        searchstr = str(searchstr)
+
+        if searchstr.isdigit():
+            search_term = "tsn"
         else:
-            # "var." and "ssp." indicate that the string has population and variation indicators and should use the WInd service
+            searchstr = '\%20'.join(re.split(' +', searchstr))
             if searchstr.find("var.") > 0 or searchstr.find("ssp.") > 0 or searchstr.find(" x ") > 0:
                 itisTerm = "nameWInd"
-            else:
-                itisTerm = "nameWOInd"
 
-        escaped_criteria = '\%20'.join(re.split(' +', searchstr))
-        
-        itisSearchURL = "http://services.itis.gov/?wt=json&rows=10&q=" + itisTerm + ":" + escaped_criteria
+        api = f"{api_stub}{search_term}:{searchstr}"
 
-        # Add the specified fuzzy search level if asked for
         if fuzzy:
-            itisSearchURL = itisSearchURL + fuzzyLevel
+            api = f"{api}{fuzzyLevel}"
 
-        # "valid" and "accepted" usage values will further constrain the search and handle cases where the search returns more than one possible record on name
         if validAccepted:
-            itisSearchURL = itisSearchURL + "%20AND%20(usage:accepted%20OR%20usage:valid)"
+            api = f"{api}%20AND%20(usage:accepted%20OR%20usage:valid)"
 
-        return itisSearchURL
+        return api
 
     def search(self, scientificname):
         # Set up itis_result structure to return and prep the processingMetadata, set a default for Summary Result to Not Matched
