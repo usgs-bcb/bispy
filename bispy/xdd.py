@@ -6,7 +6,6 @@ bis_utils = bis.Utils()
 class Xdd:
     def __init__(self, search_term=''):
         self.xdd_api_base = "https://geodeepdive.org/api"
-        self.response_result = bis_utils.processing_metadata()
         self.search_term = search_term
         self.snippets_property_mapping = {
             "title": "document_title",
@@ -26,7 +25,7 @@ url: {self.url}"
     def snippets(self, search_term):
         api_route = f"{self.xdd_api_base}/snippets?full_results&clean"
 
-        xdd_result = self.response_result
+        xdd_result = bis_utils.processing_metadata()
         self.search_term = search_term
         self.url = f"{api_route}&term={search_term}"
         xdd_result["processing_metadata"]["api"] = self.url
