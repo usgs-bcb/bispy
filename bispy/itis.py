@@ -8,7 +8,6 @@ bis_utils = bis.Utils()
 class Itis:
     def __init__(self):
         self.description = "Set of functions for interacting with ITIS"
-        self.response_result = bis_utils.processing_metadata()
 
     def package_itis_json(self, itisDoc):
         itis_data = {}
@@ -68,7 +67,7 @@ class Itis:
         else:
             searchstr = '\%20'.join(re.split(' +', searchstr))
             if searchstr.find("var.") > 0 or searchstr.find("ssp.") > 0 or searchstr.find(" x ") > 0:
-                itisTerm = "nameWInd"
+                search_term = "nameWInd"
 
         api = f"{api_stub}{search_term}:{searchstr}"
 
@@ -82,7 +81,7 @@ class Itis:
 
     def search(self, scientificname):
         # Set up itis_result structure to return and prep the processingMetadata, set a default for Summary Result to Not Matched
-        itis_result = self.response_result
+        itis_result =  bis_utils.processing_metadata()
         itis_result["processing_metadata"]["status_message"] = "Not Matched"
         itis_result["processing_metadata"]["details"] = []
 
