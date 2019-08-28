@@ -14,8 +14,8 @@ class Itis:
 
         if type(itisDoc) is not int:
             # Get rid of parts of the ITIS doc that we don't want/need to cache
-            primaryKeysToPop = ["_version_", "credibilityRating", "expert", "geographicDivision", "hierarchicalSort",
-                                "hierarchyTSN", "jurisdiction", "publication", "rankID", "otherSource", "taxonAuthor",
+            primaryKeysToPop = ["_version_", "credibilityRating", "expert", "hierarchicalSort",
+                                "hierarchyTSN", "publication", "rankID", "otherSource", "taxonAuthor",
                                 "comment"]
 
             for key in primaryKeysToPop:
@@ -24,6 +24,30 @@ class Itis:
             # Convert date properties to common property names
             itisDoc["date_created"] = itisDoc.pop("createDate")
             itisDoc["date_modified"] = itisDoc.pop("updateDate")
+
+            # Parse geographicDivision and jurisdiction into a more useful format
+            if "geographicDivision" in itisDoc.keys() and len(itisDoc["geographicDivision"]) == 1:
+                list_geographicDivision = itisDoc.pop("geographicDivision")[0].split("$")
+
+                if len(list_geographicDivision) > 0:
+                    itisDoc["geographicDivision"] = {
+                        "geographic_value": list_geographicDivision[1],
+                        "update_date": list_geographicDivision[2]
+                    }
+            else:
+                itisDoc.pop("geographicDivision", None)
+
+            if "jurisdiction" in itisDoc.keys() and len(itisDoc["jurisdiction"]) == 1:
+                list_jurisdiction = itisDoc.pop("jurisdiction")[0].split("$")
+
+                if len(list_jurisdiction) > 0:
+                    itisDoc["jurisdiction"] = {
+                        "jurisdiction_value": list_jurisdiction[1],
+                        "origin": list_jurisdiction[2],
+                        "update_date": list_jurisdiction[3]
+                    }
+            else:
+                itisDoc.pop("jurisdiction", None)
 
             # Make a clean structure of the taxonomic hierarchy
             # Make a clean structure of the taxonomic hierarchy
