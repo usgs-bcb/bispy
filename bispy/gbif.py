@@ -6,7 +6,6 @@ bis_utils = bis.Utils()
 
 class Gbif:
     def __init__(self):
-        self.response_result = bis_utils.processing_metadata()
         self.gbif_spp_occ_summary_api = "https://api.gbif.org/v1/occurrence/search?country=US&limit=0&facet=institutionCode&facet=year&facet=basisOfRecord&{}={}"
         self.gbif_species_suggest_stub = "https://api.gbif.org/v1/species/suggest?q={}"
         self.gbif_species_api_root = "http://api.gbif.org/v1/species/"
@@ -25,7 +24,7 @@ class Gbif:
         return taxonomy
 
     def summarize_us_species(self, scientificname, name_source=None):
-        result = self.response_result
+        result = bis_utils.processing_metadata()
         result["processing_metadata"]["status"] = "failure"
         result["processing_metadata"]["status_message"] = "Not Matched"
         result["processing_metadata"]["api"] = [

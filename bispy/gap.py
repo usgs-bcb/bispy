@@ -13,7 +13,6 @@ class Gap:
         self.sb_api_root = "https://www.sciencebase.gov/catalog/items"
         self.sb_geoserver = "https://www.sciencebase.gov/geoserver/CONUS_Range_2001v1/ows"
         self.bis_api_gap_state_metrics = "https://api.sciencebase.gov/bis-api/api/v1/gapmetrics/species/protection?feature_id=US_States_and_Territories%3Astate_fipscode%3A"
-        self.response_result = bis_utils.processing_metadata()
 
     def gap_species_search(self, scientificname, name_source=None, *args):
         '''
@@ -29,7 +28,7 @@ class Gap:
         Species document with all the information assembled for the given species.
         '''
 
-        gap_result = self.response_result
+        gap_result =  bis_utils.processing_metadata()
         gap_result["processing_metadata"]["status"] = "failure"
         gap_result["processing_metadata"]["status_message"] = "Not Matched"
 

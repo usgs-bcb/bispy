@@ -9,10 +9,9 @@ class Search:
     def __init__(self):
         self.description = "Set of functions for searching the Species of Greatest Conservation Need API"
         self.sgcn_spp_search_api = "https://api.sciencebase.gov/bis-api/api/v1/swap/nationallist"
-        self.response_result = bis_utils.processing_metadata()
 
     def search(self, scientificname, name_source=None):
-        result = self.response_result
+        result = bis_utils.processing_metadata()
         result["processing_metadata"]["status_message"] = "Not Matched"
         result["processing_metadata"]["status"] = "failure"
         result["processing_metadata"]["api"] = f"{self.sgcn_spp_search_api}?scientificname={scientificname}"

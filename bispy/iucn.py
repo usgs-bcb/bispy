@@ -16,7 +16,6 @@ class Iucn:
         self.iucn_resolvable_id_base = "https://www.iucnredlist.org/species/"
         self.doi_pattern_start = "http://dx.doi.org"
         self.doi_pattern_end = ".en"
-        self.response_result = bis_utils.processing_metadata()
 
         self.iucn_categories = {
             "NE": "Not Evaluated",
@@ -34,7 +33,7 @@ class Iucn:
         }
 
     def search_species(self, scientificname, name_source=None):
-        iucn_result = self.response_result
+        iucn_result = bis_utils.processing_metadata()
         iucn_result["processing_metadata"]["api"] = f"{self.iucn_species_api}/{scientificname}"
         iucn_result["parameters"] = {
             "Scientific Name": scientificname,

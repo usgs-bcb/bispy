@@ -10,11 +10,10 @@ class Natureserve:
         self.description = "Set of functions for working with the NatureServe APIs"
         self.ns_api_base = "https://services.natureserve.org/idd/rest/v1"
         self.us_name_search_api = "nationalSpecies/summary/nameSearch?nationCode=US"
-        self.response_result = bis_utils.processing_metadata()
 
     def search(self, scientificname, name_source=None):
 
-        result = self.response_result
+        result = bis_utils.processing_metadata()
         result["processing_metadata"]["status"] = "failure"
         result["processing_metadata"]["status_message"] = "Not Matched"
         result["processing_metadata"]["api"] = \

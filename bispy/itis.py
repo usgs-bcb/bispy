@@ -79,14 +79,26 @@ class Itis:
 
         return api
 
-    def search(self, scientificname):
+    def search(self, name_or_tsn, name_source=None):
         # Set up itis_result structure to return and prep the processingMetadata, set a default for Summary Result to Not Matched
         itis_result =  bis_utils.processing_metadata()
         itis_result["processing_metadata"]["status_message"] = "Not Matched"
         itis_result["processing_metadata"]["details"] = []
 
+        if name_or_tsn.isdigit():
+            search_param = "TSN"
+        else:
+            search_param = "Scientific Name"
+
+        itis_result["parameters"] = {
+            search_param: name_or_tsn
+        }
+
+        if name_source is not None:
+            result["parameters"]["Name Source"] = name_source
+
         # Set up the primary search method for an exact match on scientific name
-        url_exactMatch = self.get_itis_search_url(scientificname, False, False)
+        url_exactMatch = self.get_itis_search_url(name_or_tsn, False, False)
 
         # We have to try the main search queries because the ITIS service does not return an elegant error
         try:
@@ -102,7 +114,7 @@ class Itis:
             itis_result["processing_metadata"]["details"].append({"Exact Match Fail": url_exactMatch})
 
             # if we didn't get anything with an exact name match, run the sequence using fuzziness level
-            url_fuzzyMatch = self.get_itis_search_url(scientificname, True, False)
+            url_fuzzyMatch = self.get_itis_search_url(name_or_tsn, True, False)
 
             try:
                 r_fuzzyMatch = requests.get(url_fuzzyMatch).json()

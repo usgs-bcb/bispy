@@ -11,11 +11,10 @@ class Tess:
     def __init__(self):
         self.description = 'Set of functions for working with the USFWS Threatened and Endangered Species System'
         self.tess_api_base = "https://ecos.fws.gov/ecp0/TessQuery?request=query&xquery=/SPECIES_DETAIL"
-        self.response_result = bis_utils.processing_metadata()
 
     def search(self, criteria):
 
-        tess_result = self.response_result
+        tess_result =  bis_utils.processing_metadata()
         if criteria.isdigit():
             tess_result["processing_metadata"]["api"] = f'{self.tess_api_base}[TSN={criteria}]'
         else:
@@ -74,7 +73,6 @@ class Ecos:
             "date": "publication_date"
         }
         self.description = 'Set of functions for working with other parts of ECOS'
-        self.response_result = bis_utils.processing_metadata()
 
     def extract_js_function_value(self, string):
         return string[string.find('"') + len('"'):string.rfind('"')]
@@ -90,7 +88,7 @@ class Ecos:
             return None
 
     def scrape_ecos(self, ecos_url):
-        extracted_data = self.response_result
+        extracted_data = bis_utils.processing_metadata()
         extracted_data["processing_metadata"]["api"] = ecos_url
 
         page = requests.get(ecos_url)

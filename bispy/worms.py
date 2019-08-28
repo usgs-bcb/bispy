@@ -7,7 +7,6 @@ class Worms:
     def __init__(self):
         self.description = 'Set of functions for working with the World Register of Marine Species'
         self.filter_ranks = ["kingdom", "phylum", "class", "order", "family", "genus"]
-        self.response_result = bis_utils.processing_metadata()
 
     def get_worms_search_url(self, searchType,target):
         if searchType == "ExactName":
@@ -34,7 +33,7 @@ class Worms:
 
     def search(self, scientificname):
 
-        wormsResult = self.response_result
+        wormsResult = bis_utils.processing_metadata()
         wormsResult["processing_metadata"]["status_message"] = "Not Matched"
 
         wormsData = []
