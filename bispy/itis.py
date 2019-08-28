@@ -14,11 +14,9 @@ class Itis:
 
         if type(itisDoc) is not int:
             # Get rid of parts of the ITIS doc that we don't want/need to cache
-            primaryKeysToPop = ["_version_", "credibilityRating", "expert", "hierarchicalSort",
-                                "hierarchyTSN", "publication", "rankID", "otherSource", "taxonAuthor",
-                                "comment"]
+            discard_keys = ["hierarchicalSort", "hierarchyTSN"]
 
-            for key in primaryKeysToPop:
+            for key in discard_keys:
                 itisDoc.pop(key, None)
 
             # Convert date properties to common property names
@@ -26,28 +24,99 @@ class Itis:
             itisDoc["date_modified"] = itisDoc.pop("updateDate")
 
             # Parse geographicDivision and jurisdiction into a more useful format
-            if "geographicDivision" in itisDoc.keys() and len(itisDoc["geographicDivision"]) == 1:
-                list_geographicDivision = itisDoc.pop("geographicDivision")[0].split("$")
+            list_geographicDivision = itisDoc.pop("geographicDivision", None)
+            list_jurisdiction = itisDoc.pop("jurisdiction", None)
 
-                if len(list_geographicDivision) > 0:
-                    itisDoc["geographicDivision"] = {
-                        "geographic_value": list_geographicDivision[1],
-                        "update_date": list_geographicDivision[2]
+            if list_geographicDivision is not None:
+                itisDoc["geographicDivision"] = list()
+                for geodiv in list_geographicDivision:
+                    itisDoc["geographicDivision"].append({
+                        "geographic_value": geodiv.split("$")[1],
+                        "update_date": geodiv.split("$")[2]
+                    })
+
+            if list_jurisdiction is not None:
+                itisDoc["jurisdiction"] = list()
+                for jur in list_jurisdiction:
+                    itisDoc["jurisdiction"].append({
+                        "jurisdiction_value": jur.split("$")[1],
+                        "origin": jur.split("$")[2],
+                        "update_date": jur.split("$")[3]
+                    })
+
+            # Parse expert(s) into a more useful format
+            list_expert = itisDoc.pop("expert", None)
+
+            if list_expert is not None:
+                itisDoc["expert"] = list()
+                for exp in list_expert:
+                    itisDoc["expert"].append({
+                        "reference_type": exp.split("$")[1],
+                        "expert_id": exp.split("$")[2],
+                        "expert_name": exp.split("$")[3],
+                        "expert_comment": exp.split("$")[4],
+                        "create_date": exp.split("$")[5],
+                        "update_date": exp.split("$")[6]
+                    })
+
+            # Parse publications(s) into a more useful format
+            list_publication = itisDoc.pop("publication", None)
+
+            if list_publication is not None:
+                itisDoc["publication"] = list()
+                for pub in list_publication:
+                    pub_doc = {
+                        "reference_type": pub.split("$")[1],
+                        "reference_id": pub.split("$")[2],
+                        "author": pub.split("$")[3],
+                        "title": pub.split("$")[5],
                     }
-            else:
-                itisDoc.pop("geographicDivision", None)
+                    for index, var in enumerate(pub.split("$")[6:]):
+                        if len(var) > 0:
+                            pub_doc[f"other_variable_{index}"] = var
+                    itisDoc["publication"].append(pub_doc)
 
-            if "jurisdiction" in itisDoc.keys() and len(itisDoc["jurisdiction"]) == 1:
-                list_jurisdiction = itisDoc.pop("jurisdiction")[0].split("$")
+            # Parse otherSource into a more useful format
+            list_other_source = itisDoc.pop("otherSource", None)
 
-                if len(list_jurisdiction) > 0:
-                    itisDoc["jurisdiction"] = {
-                        "jurisdiction_value": list_jurisdiction[1],
-                        "origin": list_jurisdiction[2],
-                        "update_date": list_jurisdiction[3]
-                    }
-            else:
-                itisDoc.pop("jurisdiction", None)
+            if list_other_source is not None:
+                itisDoc["otherSource"] = list()
+                for src in list_other_source:
+                    try:
+                        itisDoc["otherSource"].append({
+                            "reference_type": src.split("$")[1],
+                            "source_id": src.split("$")[2],
+                            "source_type": src.split("$")[3],
+                            "source_name": src.split("$")[4],
+                            "version": src.split("$")[5],
+                            "acquisition_date": src.split("$")[6],
+                            "source_comment": src.split("$")[7],
+                            "create_date": src.split("$")[8],
+                            "update_date": src.split("$")[9]
+                        })
+                    except:
+                        itisDoc["otherSource"].append({
+                            "raw_text": src
+                        })
+
+            # Parse comment into a more useful format
+            list_comment = itisDoc.pop("comment", None)
+
+            if list_comment is not None:
+                itisDoc["comment"] = list()
+                for comment in list_comment:
+                    try:
+                        itisDoc["comment"].append({
+                            "comment_id": comment.split("$")[1],
+                            "commentator": comment.split("$")[2],
+                            "comment_text": comment.split("$")[3],
+                            "create_date": comment.split("$")[4],
+                            "update_date": comment.split("$")[5]
+                        })
+                    except:
+                        itisDoc["comment"].append({
+                            "raw_text": comment
+                        })
 
             # Make a clean structure of the taxonomic hierarchy
             # Make a clean structure of the taxonomic hierarchy
