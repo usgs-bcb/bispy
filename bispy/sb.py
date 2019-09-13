@@ -1,87 +1,105 @@
-import sciencebasepy
+from sciencebasepy import SbSession
 from . import bis
 
 bis_utils = bis.Utils()
 
+
 class Search:
     def __init__(self):
-        self.sbpy = sciencebasepy.SbSession()
-        self.params = {}
+        self.sb = SbSession()
+        self.params = {
+            "max": 1000,
+            "fields": "id"
+        }
+        self.acceptable_system_types = [
+            None,
+            "Data Release",
+            "Folder",
+            "Community",
+            "Downloadable",
+            "Mappable",
+            "Map Service"
+        ]
+        self.acceptable_browse_categories = [
+            None,
+            "Physical Item",
+            "Publication",
+            "Data",
+            "Project",
+            "Image",
+            "Map",
+            "Data Release - In Progress",
+            "Web Site",
+            "Collection",
+            "Software",
+            "Data Release - Under Revision"
+        ]
 
-    #Could add param function to open up search a bit?
-    #def update_params(self, search_term, filter="", max=100, fields="id"):
-    #    self.params = {"q":search_term, "max":max, "filter":filter, "fields": fields}
-
-    def data_release_search(self, search_term, max="100", fields="id"):
+    def search_snapshot(self, system_type=None, browse_category=None, q=None, fields="id"):
         '''
-        Searches for official ScienceBase data releases and returns json structure of search result.
-        This function handles the issue of looping through the ScienceBase pagination when you need to 
-        get more items than the maximum that can be returned.
+        Function is designed to return a snapshot of ScienceBase items at a point in time with a processing_metadata
+        structure we are using in the Biogeographic Information System. It adds a little bit of logic to the
+        sciencebasepy API to handle setting up specific filters of interest to our work.
 
-        :param search_term: search term that helps identify data release items of interest
+        :param system_type: If not None, accepts one of the available special item types in ScienceBase
+        :param browse_category: If not None, accepts one of the available browse category values in ScienceBase
+        :param q: query term(s)
         :param fields: Comma delimited string of ScienceBase Item fields to return
-        :return: Data release items that are officially recognized by ScienceBase returned from search
+        :return: processing_metadata and list of items returned from search
         '''
-        
-        filter_data_release = "systemType=Data Release" 
-        self.params = {"q":search_term, "max":"100", "filter":filter_data_release, "fields": fields}
-        result = self.search()
-        return result
-    
-    def in_progress_data_release_search(self, search_term, fields="id"):
-        '''
-        Searches for official ScienceBase data releases that are in progress and returns json structure of search result.
-        This function handles the issue of looping through the ScienceBase pagination when you need to 
-        get more items than the maximum that can be returned.
-
-        :param search_term: search term that helps identify data release items of interest
-        :param fields: Comma delimited string of ScienceBase Item fields to return
-        :return: Data release items that are officially recognized by ScienceBase returned from search
-        '''
-        
-        filter_data_release = "browseCategory=Data Release - In Progress" 
-        self.params = {"q":search_term, "max":100, "filter":filter_data_release, "fields": fields}
-        result = self.search()
-        return result
-
-    def search(self):
-        '''
-        Loops through ScienceBase data release items to return all items meeting specified params.  
-        This includes both official ScienceBase data releases and those in progress.
-        This function handles the issue of looping through the ScienceBase pagination when you need to 
-        get more items than the maximum that can be returned.
-
-        :param search_term: search term that helps identify data release items of interest
-        :param fields: Comma delimited string of ScienceBase Item fields to return
-        :return: Data release items that are officially recognized by ScienceBase returned from search
-        '''
-        item_list = []
 
         result = bis_utils.processing_metadata()
         result["processing_metadata"]["status"] = "failure"
         result["processing_metadata"]["status_message"] = "Search failed"
-        
-        params = self.params
-        
-        try: 
-            items = self.sbpy.find_items(params)
-            result["processing_metadata"]["api"] = items['selflink']['url']
-            result["parameters"] = params
-            if len(items['items']) == 0:
-                result["processing_metadata"]["status"] = "success"
-                result["processing_metadata"]["status_message"] = "No official ScienceBase data realeases"
-                #Do we want to capture null returns as result['data']=[] or not include 
-                return result
-            else:
-                while items and 'items' in items:
-                    item_list.extend(items['items'])
-                    items = self.sbpy.next(items)
-                num_results = f'{len(item_list)} official ScienceBase data realeases'
-                result["processing_metadata"]["status"] = "success"
-                result["processing_metadata"]["status_message"] = num_results
-                result["data"] = item_list
-                return result
 
-        except:
-            result["processing_metadata"]["status"] = "failure"
+        if system_type not in self.acceptable_system_types:
+            result["processing_metadata"]["status_message"] = \
+                f"systemType must be one of: {self.acceptable_system_types}"
             return result
+
+        if browse_category not in self.acceptable_browse_categories:
+            result["processing_metadata"]["status_message"] = \
+                f"browseCategory must be one of: {self.acceptable_browse_categories}"
+            return result
+
+        parameters = {
+            "fields": fields,
+            "max": self.params["max"]
+        }
+
+        filters = list()
+
+        if system_type is not None:
+            filters.append(f"systemType={system_type}")
+
+        if browse_category is not None:
+            filters.append(f"browseCategory={browse_category}")
+
+        if len(filters) > 0:
+            for index, filter in enumerate(filters):
+                parameters[f"filter{index}"] = filter
+
+        if q is not None:
+            parameters["q"] = q
+
+#        try:
+        items = self.sb.find_items(parameters)
+        result["processing_metadata"]["api"] = items['selflink']['url']
+        result["parameters"] = parameters
+        if len(items['items']) == 0:
+            result["processing_metadata"]["status"] = "success"
+            result["processing_metadata"]["status_message"] = "no items found"
+            return result
+        else:
+            result["data"] = list()
+            while items and 'items' in items:
+                result["data"].extend(items['items'])
+                items = self.sb.next(items)
+            result["processing_metadata"]["status"] = "success"
+            result["processing_metadata"]["status_message"] = f'Number items found: {len(result["data"])}'
+            return result
+
+#        except Exception as e:
+#            result["processing_metadata"]["status"] = "error"
+#            result["processing_metadata"]["status_message"] = e
+#            return result

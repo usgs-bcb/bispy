@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='bispy',
-      version='0.0.6',
+      version='0.0.7',
       description='Essential logic for the Biogeographic Information System',
       url='http://github.com/usgs-bcb/bispy',
       author='R. Sky Bristol',
@@ -15,6 +15,7 @@ setup(name='bispy',
             'xmltodict',
             'geopandas',
             'owslib',
-            'genson'
+            'genson',
+            'sciencebasepy'
       ],
       zip_safe=False)
