@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='bispy',
-      version='0.0.7',
+      version='0.0.8',
       description='Essential logic for the Biogeographic Information System',
       url='http://github.com/usgs-bcb/bispy',
       author='R. Sky Bristol',

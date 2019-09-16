@@ -1,5 +1,4 @@
 import requests
-from datetime import datetime
 from . import bis
 
 bis_utils = bis.Utils()
@@ -34,6 +33,6 @@ class Search:
             for key in primaryKeysToPop:
                 sgcn_species.pop(key, None)
 
-            result["sgcn_species"] = sgcn_species
+            result["data"] = sgcn_species
 
         return result

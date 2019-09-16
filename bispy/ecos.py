@@ -36,7 +36,7 @@ class Tess:
             return tess_result
 
         tess_result["processing_metadata"]["status"] = "success"
-        tess_result["tess_species"] = tessDict["results"]
+        tess_result["data"] = tessDict["results"]
 
         return tess_result
 
@@ -98,17 +98,17 @@ class Ecos:
             return extracted_data
 
         extracted_data["processing_metadata"]["status"] = "success"
-        extracted_data["ecos_species_summary"] = dict()
-        extracted_data["ecos_species_summary"]["ITIS TSN"] = self.itis_tsn(soup)
+        extracted_data["data"] = dict()
+        extracted_data["data"]["ITIS TSN"] = self.itis_tsn(soup)
 
         html_title = soup.find('title')
 
         if html_title.text.find('(') > 0:
-            extracted_data["ecos_species_summary"]["Scientific Name"] = html_title.text.split('(')[1].split(')')[0].strip()
-            extracted_data["ecos_species_summary"]["Common Name"] = html_title.text.split('(')[0].replace('Species Profile for', '').strip()
+            extracted_data["data"]["Scientific Name"] = html_title.text.split('(')[1].split(')')[0].strip()
+            extracted_data["data"]["Common Name"] = html_title.text.split('(')[0].replace('Species Profile for', '').strip()
         else:
-            extracted_data["ecos_species_summary"]["Scientific Name"] = html_title.text.replace('Species Profile for', '').strip()
-            extracted_data["ecos_species_summary"]["Common Name"] = None
+            extracted_data["data"]["Scientific Name"] = html_title.text.replace('Species Profile for', '').strip()
+            extracted_data["data"]["Common Name"] = None
 
         for section in soup.findAll('div', {'class': 'table-caption'}):
             table_title = section.text.replace("(learn more)", "").strip()
@@ -126,7 +126,7 @@ class Ecos:
                 if next((t for t in self.property_registry if t == this_table), None) is not None:
                     tbody = next_table.find('tbody')
                     if tbody is not None:
-                        extracted_data["ecos_species_summary"][this_table["Table Name"]] = list()
+                        extracted_data["data"][this_table["Table Name"]] = list()
                         for row in tbody.find_all('tr'):
                             this_record = dict()
                             for i, column in enumerate(row.select('td')):
@@ -146,11 +146,11 @@ class Ecos:
                                         link_href = f"{parsed_parent_url.scheme}://{parsed_parent_url.netloc}{link_href}"
                                     this_record["document_link"] = link_href
 
-                            extracted_data["ecos_species_summary"][this_table["Table Name"]].append(this_record)
+                            extracted_data["data"][this_table["Table Name"]].append(this_record)
 
-        if "ecos_species_summary" in extracted_data.keys():
-            extracted_data["ecos_species_summary"] = bis_utils.integrate_recordset(
-                extracted_data["ecos_species_summary"],
+        if "data" in extracted_data.keys():
+            extracted_data["data"] = bis_utils.integrate_recordset(
+                extracted_data["data"],
                 target_properties=["itis_tsn"]
             )
 

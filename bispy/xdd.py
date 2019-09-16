@@ -54,7 +54,7 @@ url: {self.url}"
         #Handle paging through results
         elif xdd_resultset["success"]["next_page"]:
             xdd_result["processing_metadata"]["status"] = "success"
-            xdd_result["xdd_documents"] = xdd_resultset["success"]["data"]
+            xdd_result["data"] = xdd_resultset["success"]["data"]
             search_url = xdd_resultset["success"]["next_page"]
             while len(search_url) > 0:
                 xdd_next_response = requests.get(search_url)
@@ -69,16 +69,16 @@ url: {self.url}"
                     return xdd_result
                 else:
                     xdd_next_resultset = xdd_next_response.json()
-                    xdd_result["xdd_documents"] += xdd_next_resultset["success"]["data"]
+                    xdd_result["data"] += xdd_next_resultset["success"]["data"]
                     search_url = xdd_next_resultset["success"]["next_page"]
 
         #Handle if nextpage is not available
         else:
             xdd_result["processing_metadata"]["status"] = "success"
-            xdd_result["xdd_documents"] = xdd_resultset["success"]["data"]
+            xdd_result["data"] = xdd_resultset["success"]["data"]
 
         if "xdd_documents" in xdd_result.keys():
-            for record in xdd_result["xdd_documents"]:
+            for record in xdd_result["data"]:
                 for k, v in self.snippets_property_mapping.items():
                     record[v] = record.pop(k)
 

@@ -1,4 +1,3 @@
-from datetime import datetime
 import requests
 from . import bis
 import re
@@ -7,7 +6,7 @@ bis_utils = bis.Utils()
 
 class Itis:
     def __init__(self):
-        self.description = "Set of functions for interacting with ITIS"
+        self.description = "Set of functions for interacting with ITIS Solr API and repackaging results for usability"
 
     def package_itis_json(self, itisDoc):
         itis_data = {}
@@ -173,8 +172,9 @@ class Itis:
         return api
 
     def search(self, name_or_tsn, name_source=None):
-        # Set up itis_result structure to return and prep the processingMetadata, set a default for Summary Result to Not Matched
-        itis_result =  bis_utils.processing_metadata()
+        # Set up itis_result structure to return and prep the processingMetadata, set a default for Summary Result
+        # to Not Matched
+        itis_result = bis_utils.processing_metadata()
         itis_result["processing_metadata"]["status_message"] = "Not Matched"
         itis_result["processing_metadata"]["details"] = []
 
@@ -188,7 +188,7 @@ class Itis:
         }
 
         if name_source is not None:
-            result["parameters"]["Name Source"] = name_source
+            itis_result["parameters"]["Name Source"] = name_source
 
         # Set up the primary search method for an exact match on scientific name
         url_exactMatch = self.get_itis_search_url(name_or_tsn, False, False)
@@ -224,14 +224,16 @@ class Itis:
 
             elif r_fuzzyMatch["response"]["numFound"] > 0:
                 # If we got one or more results with a fuzzy match, we will just use the first result
-                itis_result["itis_data"] = []
+                itis_result["data"] = []
 
-                # We need to check to see if the discovered ITIS record is accepted for use. If not, we need to follow the accepted TSN in that document
+                # We need to check to see if the discovered ITIS record is accepted for use. If not, we need to follow
+                # the accepted TSN in that document
                 if r_fuzzyMatch["response"]["docs"][0]["usage"] in ["invalid", "not accepted"]:
-                    url_tsnSearch = self.get_itis_search_url(r_fuzzyMatch["response"]["docs"][0]["acceptedTSN"][0], False,
-                                                     False)
+                    url_tsnSearch = self.get_itis_search_url(
+                        r_fuzzyMatch["response"]["docs"][0]["acceptedTSN"][0], False, False
+                    )
                     r_tsnSearch = requests.get(url_tsnSearch).json()
-                    itis_result["itis_data"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
+                    itis_result["data"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
                     itis_result["processing_metadata"]["status"] = "success"
                     itis_result["processing_metadata"]["status_message"] = "Followed Accepted TSN"
                     itis_result["processing_metadata"]["details"].append({"TSN Search": url_tsnSearch})
@@ -239,20 +241,24 @@ class Itis:
                     itis_result["processing_metadata"]["status"] = "success"
                     itis_result["processing_metadata"]["status_message"] = "Fuzzy Match"
 
-                # Whether or not we needed to follow an accepted TSN, we will also include the ITIS record that was the point of discovery
+                # Whether or not we needed to follow an accepted TSN, we will also include the ITIS record that was
+                # the point of discovery
                 itis_result["processing_metadata"]["details"].append({"Fuzzy Match": url_fuzzyMatch})
-                itis_result["itis_data"].append(self.package_itis_json(r_fuzzyMatch["response"]["docs"][0]))
+                itis_result["data"].append(self.package_itis_json(r_fuzzyMatch["response"]["docs"][0]))
 
         elif r_exactMatch["response"]["numFound"] == 1:
             # If we found only one record with the exact match query, we treat that as a useful point of discovery
 
-            itis_result["itis_data"] = []
+            itis_result["data"] = list()
 
-            # We need to check to see if the discovered ITIS record is accepted for use. If not, we need to follow the accepted TSN in that document
+            # We need to check to see if the discovered ITIS record is accepted for use. If not, we need to follow
+            # the accepted TSN in that document
             if r_exactMatch["response"]["docs"][0]["usage"] in ["invalid", "not accepted"]:
-                url_tsnSearch = self.get_itis_search_url(r_exactMatch["response"]["docs"][0]["acceptedTSN"][0], False, False)
+                url_tsnSearch = self.get_itis_search_url(
+                    r_exactMatch["response"]["docs"][0]["acceptedTSN"][0], False, False
+                )
                 r_tsnSearch = requests.get(url_tsnSearch).json()
-                itis_result["itis_data"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
+                itis_result["data"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
                 itis_result["processing_metadata"]["status"] = "success"
                 itis_result["processing_metadata"]["status_message"] = "Followed Accepted TSN"
                 itis_result["processing_metadata"]["details"].append({"TSN Search": url_tsnSearch})
@@ -260,17 +266,20 @@ class Itis:
                 itis_result["processing_metadata"]["status"] = "success"
                 itis_result["processing_metadata"]["status_message"] = "Exact Match"
 
-            # Whether or not we needed to follow an accepted TSN, we will also include the ITIS record that was the point of discovery
+            # Whether or not we needed to follow an accepted TSN, we will also include the ITIS record that was the
+            # point of discovery
             itis_result["processing_metadata"]["details"].append({"Exact Match": url_exactMatch})
-            itis_result["itis_data"].append(self.package_itis_json(r_exactMatch["response"]["docs"][0]))
+            itis_result["data"].append(self.package_itis_json(r_exactMatch["response"]["docs"][0]))
 
         elif r_exactMatch["response"]["numFound"] > 1:
-            # If we find more than one document with an exact match search, we can make a few more decisions based on what's in the data before we need to punt the rest to human supervision
+            # If we find more than one document with an exact match search, we can make a few more decisions based
+            # on what's in the data before we need to punt the rest to human supervision
 
             itis_result["processing_metadata"]["details"].append({"Multi Match": url_exactMatch})
 
-            # First we assemble the set of acceptedTSNs for the discovered records so that we can determine if there is only a single accepted record to follow
-            # This step might need review by the ITIS team, but it seems reasonable for the records we have looked at so far
+            # First we assemble the set of acceptedTSNs for the discovered records so that we can determine if there
+            # is only a single accepted record to follow. This step might need review by the ITIS team, but it seems
+            # reasonable for the records we have looked at so far
             acceptedTSNs = []
             for itisDoc in r_exactMatch["response"]["docs"]:
                 if "acceptedTSN" in itisDoc.keys() and itisDoc["acceptedTSN"][0] not in acceptedTSNs:
@@ -278,17 +287,18 @@ class Itis:
 
             if len(acceptedTSNs) == 1:
                 # Multiple exact matches were returned, but only one of them has an accepted TSN to follow
-                itis_result["itis_data"] = []
+                itis_result["data"] = list()
                 url_tsnSearch = self.get_itis_search_url(acceptedTSNs[0], False, True)
                 r_tsnSearch = requests.get(url_tsnSearch).json()
-                itis_result["itis_data"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
+                itis_result["data"].append(self.package_itis_json(r_tsnSearch["response"]["docs"][0]))
                 itis_result["processing_metadata"]["status"] = "success"
                 itis_result["processing_metadata"]["status_message"] = "Followed Accepted TSN"
                 itis_result["processing_metadata"]["details"].append({"TSN Search": url_tsnSearch})
 
             else:
-                # If there are multiple acceptedTSN values for multiple returned exact match records, we don't yet know what to do with these.
-                # Some combination of factors in the data or a deeper level search from the source may come up with a way to make the algorithm more sophisticated.
+                # If there are multiple acceptedTSN values for multiple returned exact match records, we don't yet
+                # know what to do with these. Some combination of factors in the data or a deeper level search from
+                # the source may come up with a way to make the algorithm more sophisticated.
                 itis_result["processing_metadata"]["status"] = "failure"
                 itis_result["processing_metadata"]["status_message"] = "Indeterminate Results"
 
