@@ -44,7 +44,7 @@ class Gbif:
             result["processing_metadata"]["status"] = "failure"
             return result
 
-        result["gbif_species"] = {
+        result["data"] = {
             "key": gbif_spp_search_results[0]["key"],
             "resolvable_identifier": f"{self.gbif_species_api_root}{gbif_spp_search_results[0]['key']}",
             "biological_taxonomy": self.build_gbif_taxonomy(gbif_spp_search_results[0]),
@@ -59,7 +59,7 @@ class Gbif:
             result["processing_metadata"]["api"].append(
                 self.gbif_spp_occ_summary_api.format(
                     "taxon-Key",
-                    result["gbif_species"]["nubKey"]
+                    result["data"]["nubKey"]
                 )
             )
         else:
@@ -79,7 +79,7 @@ class Gbif:
 
         result["processing_metadata"]["status_message"] = "Matched"
         result["processing_metadata"]["status"] = "success"
-        result["gbif_species"]["Occurrence Summary"] = gbif_occ_results
+        result["data"]["Occurrence Summary"] = gbif_occ_results
 
         return result
 

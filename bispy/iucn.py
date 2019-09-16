@@ -64,7 +64,7 @@ class Iucn:
         iucn_result["processing_metadata"]["status"] = "success"
         iucn_result["processing_metadata"]["status_message"] = "Species Name Matched"
 
-        iucn_result["iucn_species_summary"] = {
+        iucn_result["data"] = {
             "iucn_taxonid": iucn_species_data['result'][0]['taxonid'],
             "iucn_status_code": iucn_species_data['result'][0]['category'],
             "iucn_status_name": self.iucn_categories[iucn_species_data['result'][0]['category']],
@@ -73,31 +73,31 @@ class Iucn:
         }
 
         iucn_citation_response = requests.get(
-            f"{self.iucn_citation_api}/{iucn_result['iucn_species_summary']['iucn_taxonid']}?token={os.environ['token_iucn']}"
+            f"{self.iucn_citation_api}/{iucn_result['data']['iucn_taxonid']}?token={os.environ['token_iucn']}"
         ).json()
 
-        iucn_result["iucn_species_summary"]["citation_string"] = iucn_citation_response["result"][0]["citation"]
+        iucn_result["data"]["citation_string"] = iucn_citation_response["result"][0]["citation"]
 
-        regex_string_secondary_id = f"e\.T{iucn_result['iucn_species_summary']['iucn_taxonid']}A(.*?)\."
+        regex_string_secondary_id = f"e\.T{iucn_result['data']['iucn_taxonid']}A(.*?)\."
         match_secondary_id = re.search(regex_string_secondary_id,
-                                              iucn_result["iucn_species_summary"]["citation_string"])
+                                              iucn_result["data"]["citation_string"])
         if match_secondary_id is not None:
-            iucn_result["iucn_species_summary"]["iucn_secondary_identifier"] = match_secondary_id.group(1)
-            iucn_result["iucn_species_summary"]["resolvable_identifier"] = \
+            iucn_result["data"]["iucn_secondary_identifier"] = match_secondary_id.group(1)
+            iucn_result["data"]["resolvable_identifier"] = \
                 f"{self.iucn_resolvable_id_base}" \
-                f"{iucn_result['iucn_species_summary']['iucn_taxonid']}/" \
+                f"{iucn_result['data']['iucn_taxonid']}/" \
                 f"{match_secondary_id.group(1)}"
         else:
-            iucn_result["iucn_species_summary"]["iucn_secondary_identifier"] = None
-            iucn_result["iucn_species_summary"]["resolvable_identifier"] = None
+            iucn_result["data"]["iucn_secondary_identifier"] = None
+            iucn_result["data"]["resolvable_identifier"] = None
 
         regex_string_doi = f"{self.doi_pattern_start}(.*?){self.doi_pattern_end}"
-        match_iucn_doi = re.search(regex_string_doi, iucn_result["iucn_species_summary"]["citation_string"])
+        match_iucn_doi = re.search(regex_string_doi, iucn_result["data"]["citation_string"])
 
         if match_iucn_doi is not None:
-            iucn_result["iucn_species_summary"]["doi"] = f"{self.doi_pattern_start}{match_iucn_doi.group(1)}{self.doi_pattern_end}"
+            iucn_result["data"]["doi"] = f"{self.doi_pattern_start}{match_iucn_doi.group(1)}{self.doi_pattern_end}"
         else:
-            iucn_result["iucn_species_summary"]["doi"] = None
+            iucn_result["data"]["doi"] = None
 
         return iucn_result
 

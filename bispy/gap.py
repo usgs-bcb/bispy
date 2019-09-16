@@ -1,5 +1,4 @@
 import requests
-from datetime import datetime
 import json
 import geopandas as gpd
 from shapely.geometry import box
@@ -33,11 +32,9 @@ class Gap:
         gap_result["processing_metadata"]["status_message"] = "Not Matched"
 
         gap_result["parameters"] = {
-            "Scientific Name": scientificname
+            "Scientific Name": scientificname,
+            "Name Source": name_source
         }
-
-        if name_source is not None:
-            gap_result["parameters"]["Name Source"] = name_source
 
         identifier_param = {
             "key": scientificname
@@ -50,7 +47,7 @@ class Gap:
         sb_result = requests.get(gap_result["processing_metadata"]["api"]).json()
 
         if sb_result["total"] == 1:
-            gap_result["GAP Species"] = self.package_gap_species(self.package_habmap_item(sb_result["items"][0]))
+            gap_result["data"] = self.package_gap_species(self.package_habmap_item(sb_result["items"][0]))
             gap_result["processing_metadata"]["status"] = "success"
             gap_result["processing_metadata"]["status_message"] = "Exact Match"
 

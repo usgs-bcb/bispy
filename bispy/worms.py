@@ -31,13 +31,18 @@ class Worms:
         })
         return taxonomy
 
-    def search(self, scientificname):
+    def search(self, scientificname, name_source=None):
 
         wormsResult = bis_utils.processing_metadata()
         wormsResult["processing_metadata"]["status_message"] = "Not Matched"
 
-        wormsData = []
-        aphiaIDs = []
+        wormsResult["parameters"] = {
+            "Scientific Name": scientificname,
+            "Name Source": name_source
+        }
+
+        wormsData = list()
+        aphiaIDs = list()
 
         url_ExactMatch = self.get_worms_search_url("ExactName", scientificname)
         nameResults_exact = requests.get(url_ExactMatch)
@@ -99,7 +104,7 @@ class Worms:
                 record["date_modified"] = record.pop("modified")
                 worms_data.append(record)
 
-            wormsResult["worms_data"] = worms_data
+            wormsResult["data"] = worms_data
 
         return wormsResult
 

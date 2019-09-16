@@ -43,11 +43,11 @@ class Natureserve:
                         None
                     )
                     if ns_species is not None:
-                        result["NatureServe Species"] = ns_species
+                        result["data"] = ns_species
                         result["processing_metadata"]["status"] = "success"
                         result["processing_metadata"]["status_message"] = "Multiple Match"
                 else:
-                    result["NatureServe Species"] = ns_dict["speciesList"]["species"]
+                    result["data"] = ns_dict["speciesList"]["species"]
                     result["processing_metadata"]["status"] = "success"
                     result["processing_metadata"]["status_message"] = "Single Match"
 
