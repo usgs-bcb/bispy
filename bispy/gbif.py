@@ -55,7 +55,7 @@ class Gbif:
             "synonym": gbif_spp_search_results[0]["synonym"]
         }
 
-        if "nubKey" in result["gbif_species"].keys():
+        if "nubKey" in result["data"].keys():
             result["processing_metadata"]["api"].append(
                 self.gbif_spp_occ_summary_api.format(
                     "taxon-Key",
