@@ -49,7 +49,7 @@ class Worms:
 
         if nameResults_exact.status_code == 200:
             wormsDoc = nameResults_exact.json()[0]
-            wormsDoc["taxonomy"] = self.build_worms_taxonomy(wormsDoc)
+            wormsDoc["biological_taxonomy"] = self.build_worms_taxonomy(wormsDoc)
             wormsResult["processing_metadata"]["api"] = url_ExactMatch
             wormsResult["processing_metadata"]["status"] = "success"
             wormsResult["processing_metadata"]["status_message"] = "Exact Match"
@@ -62,7 +62,7 @@ class Worms:
             nameResults_fuzzy = requests.get(url_FuzzyMatch)
             if nameResults_fuzzy.status_code == 200:
                 wormsDoc = nameResults_fuzzy.json()[0]
-                wormsDoc["taxonomy"] = self.build_worms_taxonomy(wormsDoc)
+                wormsDoc["biological_taxonomy"] = self.build_worms_taxonomy(wormsDoc)
                 wormsResult["processing_metadata"]["status"] = "success"
                 wormsResult["processing_metadata"]["status_message"] = "Fuzzy Match"
                 wormsData.append(wormsDoc)
