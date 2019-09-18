@@ -14,7 +14,7 @@ class Tess:
 
     def search(self, criteria):
 
-        tess_result =  bis_utils.processing_metadata()
+        tess_result = bis_utils.processing_metadata()
         if criteria.isdigit():
             tess_result["processing_metadata"]["api"] = f'{self.tess_api_base}[TSN={criteria}]'
         else:

@@ -33,6 +33,8 @@ class Worms:
 
     def search(self, scientificname, name_source=None):
 
+        headers = {'content-type': 'application/json'}
+
         wormsResult = bis_utils.processing_metadata()
         wormsResult["processing_metadata"]["status_message"] = "Not Matched"
 
@@ -45,7 +47,7 @@ class Worms:
         aphiaIDs = list()
 
         url_ExactMatch = self.get_worms_search_url("ExactName", scientificname)
-        nameResults_exact = requests.get(url_ExactMatch)
+        nameResults_exact = requests.get(url_ExactMatch, headers=headers)
 
         if nameResults_exact.status_code == 200:
             wormsDoc = nameResults_exact.json()[0]
@@ -59,7 +61,7 @@ class Worms:
         else:
             url_FuzzyMatch = self.get_worms_search_url("FuzzyName", scientificname)
             wormsResult["processing_metadata"]["api"] = url_FuzzyMatch
-            nameResults_fuzzy = requests.get(url_FuzzyMatch)
+            nameResults_fuzzy = requests.get(url_FuzzyMatch, headers=headers)
             if nameResults_fuzzy.status_code == 200:
                 wormsDoc = nameResults_fuzzy.json()[0]
                 wormsDoc["biological_taxonomy"] = self.build_worms_taxonomy(wormsDoc)
@@ -73,8 +75,8 @@ class Worms:
             valid_AphiaID = wormsData[0]["valid_AphiaID"]
             while valid_AphiaID is not None:
                 if valid_AphiaID not in aphiaIDs:
-                    url_AphiaID = self.get_worms_search_url("AphiaID",valid_AphiaID)
-                    aphiaIDResults = requests.get(url_AphiaID)
+                    url_AphiaID = self.get_worms_search_url("AphiaID", valid_AphiaID)
+                    aphiaIDResults = requests.get(url_AphiaID, headers=headers)
                     if aphiaIDResults.status_code == 200:
                         wormsDoc = aphiaIDResults.json()
                         # Build common biological_taxonomy structure
