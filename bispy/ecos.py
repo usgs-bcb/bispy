@@ -15,10 +15,14 @@ class Tess:
     def search(self, criteria):
 
         tess_result = bis_utils.processing_metadata()
+        tess_result["processing_metadata"]["status"] = "failure"
+        tess_result["processing_metadata"]["status_message"] = "Search failed"
         if criteria.isdigit():
             tess_result["processing_metadata"]["api"] = f'{self.tess_api_base}[TSN={criteria}]'
+            tess_result["parameters"]= {'tsn': criteria}
         else:
             tess_result["processing_metadata"]["api"] = f'{self.tess_api_base}[SCINAME="{criteria}"]'
+            tess_result["parameters"]= {'Scientific Name': criteria}
 
         # Query the TESS XQuery service
         tess_response = requests.get(tess_result["processing_metadata"]["api"])
