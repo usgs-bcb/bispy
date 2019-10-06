@@ -56,6 +56,13 @@ class Iucn:
 
         iucn_species_data = iucn_response.json()
 
+        #if a token is passed but it is not valid status code == 200 but you get a message returned "Token not valid!"
+        if "message" in iucn_species_data.keys() and iucn_species_data["message"]=="Token not valid!":
+            iucn_result["processing_metadata"]["status"] = "failure"
+            iucn_result["processing_metadata"]["status_message"] = iucn_species_data["message"]
+            return iucn_result
+
+
         if "result" not in iucn_species_data.keys() or len(iucn_species_data["result"]) == 0:
             iucn_result["processing_metadata"]["status"] = "failure"
             iucn_result["processing_metadata"]["status_message"] = "Species Name Not Found"
